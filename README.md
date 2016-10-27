@@ -7,3 +7,4 @@ that I expermient with.
 
 [urlpretty](./urlpretty): Pretty print a url
 [htmlstring](./htmlstring): Escape/Unescape HTML strings
+[qp](./qp): Encode/Decode QuotedPrintable strings.
