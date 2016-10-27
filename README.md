@@ -6,3 +6,4 @@ that I expermient with.
 ## Tools
 
 [urlpretty](./urlpretty): Pretty print a url
+[htmlstring](./htmlstring): Escape/Unescape HTML strings
