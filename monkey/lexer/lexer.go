@@ -6,6 +6,17 @@ import (
 	"github.com/emb/play/monkey/token"
 )
 
+// isLetter returns true if the underlying byte is an ASCII letter or
+// underscore
+func isLetter(ch byte) bool {
+	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+}
+
+// isDigit returns true if the underlying byte is a number.
+func isDigit(ch byte) bool {
+	return '0' <= ch && ch <= '9'
+}
+
 // New creates a new lexer
 func New(input string) *Lexer {
 	l := &Lexer{input: input}
@@ -31,6 +42,37 @@ func (l *Lexer) readChar() {
 	l.readPosition++
 }
 
+func (l *Lexer) peekChar() byte {
+	if l.readPosition >= len(l.input) {
+		return 0
+	}
+	return l.input[l.readPosition]
+}
+
+// skip skips white space
+func (l *Lexer) skip() {
+	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
+		l.readChar()
+	}
+}
+
+// ident reads an identifier
+func (l *Lexer) ident() string {
+	pos := l.position
+	for isLetter(l.ch) {
+		l.readChar()
+	}
+	return l.input[pos:l.position]
+}
+
+func (l *Lexer) number() string {
+	pos := l.position
+	for isDigit(l.ch) {
+		l.readChar()
+	}
+	return l.input[pos:l.position]
+}
+
 // NextToken returns a next token every time it is called on a given
 // input. When tokens run out token.EOF is returned.
 func (l *Lexer) NextToken() token.Token {
@@ -38,20 +80,50 @@ func (l *Lexer) NextToken() token.Token {
 		return token.Token{Type: t, Literal: string(ch)}
 	}
 
+	l.skip()
+
 	var tok token.Token
 	switch l.ch {
 	case '=':
-		tok = new(token.ASSIGN, l.ch)
+		if l.peekChar() == '=' {
+			eq := string(l.ch)
+			l.readChar()
+			eq += string(l.ch)
+			tok.Type = token.EQ
+			tok.Literal = eq
+		} else {
+			tok = new(token.ASSIGN, l.ch)
+		}
 	case '+':
 		tok = new(token.PLUS, l.ch)
+	case '-':
+		tok = new(token.MINUS, l.ch)
+	case '*':
+		tok = new(token.ASTERISK, l.ch)
+	case '/':
+		tok = new(token.SLASH, l.ch)
+	case '>':
+		tok = new(token.GT, l.ch)
+	case '<':
+		tok = new(token.LT, l.ch)
+	case '!':
+		if l.peekChar() == '=' {
+			neq := string(l.ch)
+			l.readChar()
+			neq += string(l.ch)
+			tok.Type = token.NEQ
+			tok.Literal = neq
+		} else {
+			tok = new(token.BANG, l.ch)
+		}
 	case ';':
 		tok = new(token.SEMICOLON, l.ch)
+	case ',':
+		tok = new(token.COMMA, l.ch)
 	case '(':
 		tok = new(token.LPAREN, l.ch)
 	case ')':
 		tok = new(token.RPAREN, l.ch)
-	case ',':
-		tok = new(token.COMMA, l.ch)
 	case '{':
 		tok = new(token.LBRACE, l.ch)
 	case '}':
@@ -59,7 +131,13 @@ func (l *Lexer) NextToken() token.Token {
 	case 0:
 		tok.Type = token.EOF
 	default:
-		tok.Type = token.ILLEGAL
+		if isLetter(l.ch) {
+			i := l.ident()
+			return token.Token{token.LookupIdent(i), i}
+		} else if isDigit(l.ch) {
+			return token.Token{token.INT, l.number()}
+		}
+		tok = new(token.ILLEGAL, l.ch)
 	}
 	l.readChar()
 	return tok

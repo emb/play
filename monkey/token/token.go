@@ -27,6 +27,16 @@ const (
 const (
 	ASSIGN = "="
 	PLUS   = "+"
+	MINUS  = "-"
+	SLASH  = "/"
+
+	EQ  = "=="
+	NEQ = "!="
+	GT  = ">"
+	LT  = "<"
+
+	BANG     = "!"
+	ASTERISK = "*"
 )
 
 // Delimiters
@@ -47,4 +57,28 @@ const (
 const (
 	FUNCTION = "FUNCTION"
 	LET      = "LET"
+	TRUE     = "TRUE"
+	FALSE    = "FALSE"
+	IF       = "IF"
+	ELSE     = "ELSE"
+	RETURN   = "RETURN"
 )
+
+var keywords = map[string]Type{
+	"fn":     FUNCTION,
+	"let":    LET,
+	"true":   TRUE,
+	"false":  FALSE,
+	"if":     IF,
+	"else":   ELSE,
+	"return": RETURN,
+}
+
+// LookupIdent returns the type of a given identifier whether it is a
+// keyword or not.
+func LookupIdent(k string) Type {
+	if t, ok := keywords[k]; ok {
+		return t
+	}
+	return IDENT
+}
