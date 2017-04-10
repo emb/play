@@ -17,6 +17,7 @@ let foobar = 989865;
 	p := New(l)
 
 	program := p.Program()
+	checkErrors(t, p)
 	if program == nil {
 		t.Fatal("p.Progarm() returned nil")
 	}
@@ -57,4 +58,16 @@ func testLet(t *testing.T, s ast.Statement, name string) {
 		t.Errorf(".Name.TokenLiteral is %q, want %q",
 			let.Name.TokenLiteral(), name)
 	}
+}
+
+func checkErrors(t *testing.T, p *Parser) {
+	errors := p.errors
+	if len(errors) == 0 {
+		return
+	}
+	t.Errorf("parser has %d errors", len(errors))
+	for _, msg := range errors {
+		t.Errorf("parser error: %q", msg)
+	}
+	t.FailNow()
 }

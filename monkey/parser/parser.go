@@ -2,6 +2,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/emb/play/monkey/ast"
 	"github.com/emb/play/monkey/lexer"
 	"github.com/emb/play/monkey/token"
@@ -9,7 +11,7 @@ import (
 
 // New crates a new parser given a lexer l.
 func New(l *lexer.Lexer) *Parser {
-	p := &Parser{l: l}
+	p := &Parser{l: l, errors: []string{}}
 
 	// Read two tokens, so both c,p are set.
 	p.next()
@@ -24,6 +26,8 @@ type Parser struct {
 
 	c token.Token // Current
 	p token.Token // Next/Peek token
+
+	errors []string
 }
 
 // next advances the parser by a token.
@@ -81,6 +85,9 @@ func (p *Parser) nextIfPeek(t token.Type) bool {
 		p.next()
 		return true
 	}
+	msg := fmt.Sprintf("expected next token to be %s, got %s instead",
+		t, p.p.Type)
+	p.err(msg)
 	return false
 }
 
@@ -92,4 +99,9 @@ func (p *Parser) currentIs(t token.Type) bool {
 // peekIs checks if the type of the next/peek token.
 func (p *Parser) peekIs(t token.Type) bool {
 	return p.p.Type == t
+}
+
+// error append an error to the list of errors in the parser.
+func (p *Parser) err(msg string) {
+	p.errors = append(p.errors, msg)
 }
