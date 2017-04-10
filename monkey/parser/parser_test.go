@@ -99,3 +99,61 @@ return 94897597;
 		}
 	}
 }
+
+func TestIdentifierExpression(t *testing.T) {
+	input := "monkeySee;" // A valid expression with an identifier
+	parser := New(lexer.New(input))
+	program := parser.Program()
+	checkErrors(t, parser)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program has %d statements, want 1",
+			len(program.Statements))
+	}
+	stmt, ok := program.Statements[0].(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
+			program.Statements[0])
+	}
+	ident, ok := stmt.Expression.(*ast.Identifier)
+	if !ok {
+		t.Fatalf("stmt.Expression is of type %T, want *ast.Identifier",
+			stmt.Expression)
+	}
+	if ident.Value != "monkeySee" {
+		t.Errorf("ident.Value is %s, want monkeySee", ident.Value)
+	}
+	if ident.TokenLiteral() != "monkeySee" {
+		t.Errorf("ident.TokenLiteral() is %s, want monkeySee",
+			ident.TokenLiteral())
+	}
+}
+
+func TestIntegerLiteralExpression(t *testing.T) {
+	input := "7;"
+	parser := New(lexer.New(input))
+	program := parser.Program()
+	checkErrors(t, parser)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program has %d statements, want 1",
+			len(program.Statements))
+	}
+	stmt, ok := program.Statements[0].(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
+			program.Statements[0])
+	}
+	literal, ok := stmt.Expression.(*ast.IntegerLiteral)
+	if !ok {
+		t.Fatalf("stmt.Expression is of type %T, want *ast.IntegerLiteral",
+			stmt.Expression)
+	}
+	if literal.Value != 7 {
+		t.Errorf("literal.Value is %d, want 7", literal.Value)
+	}
+	if literal.TokenLiteral() != "7" {
+		t.Errorf("literal.TokenLiteral() is %s, want 7",
+			literal.TokenLiteral())
+	}
+}

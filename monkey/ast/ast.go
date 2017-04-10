@@ -129,3 +129,15 @@ func (e *ExpressionStmt) String() string {
 	}
 	return e.Expression.String()
 }
+
+// IntegerLiteral describes an integer in the Monkey language
+type IntegerLiteral struct {
+	Token token.Token
+	Value int64
+}
+
+// TokenLiteral returns the literal value of IntegerLiteral
+func (i *IntegerLiteral) TokenLiteral() string { return i.Token.Literal }
+
+// String returns a string representation of IntegerLiteral
+func (i *IntegerLiteral) String() string { return i.Token.Literal }
