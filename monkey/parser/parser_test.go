@@ -45,7 +45,7 @@ func testLet(t *testing.T, s ast.Statement, name string) {
 		t.Errorf(`s.TokenLiteral has %q, want "let"`, s.TokenLiteral())
 	}
 
-	let, ok := s.(*ast.Let)
+	let, ok := s.(*ast.LetStmt)
 	if !ok {
 		t.Errorf("statement type is %T, want *ast.Let", s)
 	}
@@ -88,7 +88,7 @@ return 94897597;
 	}
 
 	for _, stmt := range program.Statements {
-		ret, ok := stmt.(*ast.Return)
+		ret, ok := stmt.(*ast.ReturnStmt)
 		if !ok {
 			t.Errorf("statement type is %T, want *ast.Return", stmt)
 			continue

@@ -64,8 +64,8 @@ func (p *Parser) statement() ast.Statement {
 	}
 }
 
-func (p *Parser) let() *ast.Let {
-	stmt := &ast.Let{Token: p.c}
+func (p *Parser) let() *ast.LetStmt {
+	stmt := &ast.LetStmt{Token: p.c}
 	if !p.nextIfPeek(token.IDENT) {
 		return nil
 	}
@@ -80,8 +80,8 @@ func (p *Parser) let() *ast.Let {
 	return stmt
 }
 
-func (p *Parser) ret() *ast.Return {
-	stmt := &ast.Return{Token: p.c}
+func (p *Parser) ret() *ast.ReturnStmt {
+	stmt := &ast.ReturnStmt{Token: p.c}
 	// TODO: skipping expression for now until a semicolon
 	for !p.currentIs(token.SEMICOLON) {
 		p.next()

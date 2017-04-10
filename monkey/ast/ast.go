@@ -1,4 +1,8 @@
 // Package ast describes the Abstract Syntax Tree of the Monkey Language.
+//
+// The monkey language has 2 main statements; let and return. The rest
+// of the language is made up of expressions. Even the if conditionals
+// are expressions.
 package ast
 
 import "github.com/emb/play/monkey/token"
@@ -31,17 +35,15 @@ func (p *Program) TokenLiteral() string {
 	return ""
 }
 
-// Let describes a Let statement.
-type Let struct {
+// LetStmt describes a Let statement.
+type LetStmt struct {
 	Token token.Token
 	Name  *Identifier
 	Value Expression
 }
 
 // TokenLiteral returns the token literal underlying let statement.
-func (l *Let) TokenLiteral() string {
-	return l.Token.Literal
-}
+func (l *LetStmt) TokenLiteral() string { return l.Token.Literal }
 
 // Identifier describes user defined names used during variable
 // bindings in the language.
@@ -51,17 +53,28 @@ type Identifier struct {
 }
 
 // TokenLiteral returns the literal value of an identifier token.
-func (i *Identifier) TokenLiteral() string {
-	return i.Token.Literal
-}
+func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
 
-// Return describes a Return statement.
-type Return struct {
+// ReturnStmt describes a Return statement.
+type ReturnStmt struct {
 	Token token.Token
 	Value Expression
 }
 
 // TokenLiteral returns the token literal underlying return statement.
-func (r *Return) TokenLiteral() string {
-	return r.Token.Literal
+func (r *ReturnStmt) TokenLiteral() string { return r.Token.Literal }
+
+// ExpressionStmt describes an Expression statement. Unlike the main two
+// statements of the language this is a wrapper. Since the following
+// code is valid Monkey code.
+// 	let x = 4
+//	x + 3
+type ExpressionStmt struct {
+	// Token stores the first token of an expression.
+	Token      token.Token
+	Expression Expression
 }
+
+// TokenLiteral returns the literal value of the first token in an
+// expression.
+func (e *ExpressionStmt) TokenLiteral() string { return e.Token.Literal }
