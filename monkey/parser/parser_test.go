@@ -71,3 +71,31 @@ func checkErrors(t *testing.T, p *Parser) {
 	}
 	t.FailNow()
 }
+
+func TestReturnStatements(t *testing.T) {
+	input := `
+return 5;
+return 10;
+return 94897597;
+`
+	parser := New(lexer.New(input))
+	program := parser.Program()
+	checkErrors(t, parser)
+
+	if len(program.Statements) != 3 {
+		t.Fatalf("program.Statements has %d, want 3",
+			len(program.Statements))
+	}
+
+	for _, stmt := range program.Statements {
+		ret, ok := stmt.(*ast.Return)
+		if !ok {
+			t.Errorf("statement type is %T, want *ast.Return", stmt)
+			continue
+		}
+		if ret.TokenLiteral() != "return" {
+			t.Errorf(`.TokenLiteral() is %q, want "return"`,
+				ret.TokenLiteral())
+		}
+	}
+}

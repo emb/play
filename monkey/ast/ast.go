@@ -38,7 +38,7 @@ type Let struct {
 	Value Expression
 }
 
-// TokenLiteral returns
+// TokenLiteral returns the token literal underlying let statement.
 func (l *Let) TokenLiteral() string {
 	return l.Token.Literal
 }
@@ -53,4 +53,15 @@ type Identifier struct {
 // TokenLiteral returns the literal value of an identifier token.
 func (i *Identifier) TokenLiteral() string {
 	return i.Token.Literal
+}
+
+// Return describes a Return statement.
+type Return struct {
+	Token token.Token
+	Value Expression
+}
+
+// TokenLiteral returns the token literal underlying return statement.
+func (r *Return) TokenLiteral() string {
+	return r.Token.Literal
 }
