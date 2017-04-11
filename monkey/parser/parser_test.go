@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/emb/play/monkey/ast"
@@ -144,16 +145,59 @@ func TestIntegerLiteralExpression(t *testing.T) {
 		t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
 			program.Statements[0])
 	}
-	literal, ok := stmt.Expression.(*ast.IntegerLiteral)
+	testIntegerLiteral(t, stmt.Expression, 7)
+}
+
+func testIntegerLiteral(t *testing.T, expr ast.Expression, value int64) {
+	literal, ok := expr.(*ast.IntegerLiteral)
 	if !ok {
 		t.Fatalf("stmt.Expression is of type %T, want *ast.IntegerLiteral",
-			stmt.Expression)
+			expr)
 	}
-	if literal.Value != 7 {
+	if literal.Value != value {
 		t.Errorf("literal.Value is %d, want 7", literal.Value)
 	}
-	if literal.TokenLiteral() != "7" {
+	if literal.TokenLiteral() != strconv.FormatInt(value, 10) {
 		t.Errorf("literal.TokenLiteral() is %s, want 7",
 			literal.TokenLiteral())
+	}
+}
+
+func TestParsingPrefixExpressions(t *testing.T) {
+	tests := []struct {
+		input  string
+		wantOp string
+		want   int64
+	}{
+		{"!5", "!", 5},
+		{"-15", "-", 15},
+	}
+
+	for i, tc := range tests {
+		t.Logf("test[%d] input %s", i, tc.input)
+
+		parser := New(lexer.New(tc.input))
+		program := parser.Program()
+		checkErrors(t, parser)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("program has %d statements, want 1",
+				len(program.Statements))
+		}
+		stmt, ok := program.Statements[0].(*ast.ExpressionStmt)
+		if !ok {
+			t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
+				program.Statements[0])
+		}
+		expr, ok := stmt.Expression.(*ast.PrefixExpr)
+		if !ok {
+			t.Fatalf("stmt.Expression is of type %T, want *ast.PrefixExpr",
+				stmt.Expression)
+		}
+		if expr.Operator != tc.wantOp {
+			t.Errorf("expr.Operator is %s, want %s",
+				expr.Operator, tc.wantOp)
+		}
+		testIntegerLiteral(t, expr.Right, tc.want)
 	}
 }

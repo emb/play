@@ -141,3 +141,22 @@ func (i *IntegerLiteral) TokenLiteral() string { return i.Token.Literal }
 
 // String returns a string representation of IntegerLiteral
 func (i *IntegerLiteral) String() string { return i.Token.Literal }
+
+// PrefixExpr describes a prefix expressions of form -5.
+type PrefixExpr struct {
+	// Token describes the prefix token; ! or -
+	Token    token.Token
+	Operator string
+	Right    Expression
+}
+
+// TokenLiteral returns the literal value of the prefix expression
+func (p *PrefixExpr) TokenLiteral() string { return p.Token.Literal }
+
+// String reconstructs the input code of a prefix expersion
+func (p *PrefixExpr) String() string {
+	if p == nil {
+		return ""
+	}
+	return fmt.Sprintf("(%s%s)", p.Operator, p.Right)
+}

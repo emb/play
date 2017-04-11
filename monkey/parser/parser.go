@@ -25,6 +25,8 @@ func New(l *lexer.Lexer) *Parser {
 	// Register expression parsing functions.
 	p.registerPrefix(token.IDENT, p.ident)
 	p.registerPrefix(token.INT, p.int)
+	p.registerPrefix(token.BANG, p.prefix)
+	p.registerPrefix(token.MINUS, p.prefix)
 
 	return p
 }
@@ -129,6 +131,9 @@ func (p *Parser) exprStmt() *ast.ExpressionStmt {
 func (p *Parser) expr(prec precedence) ast.Expression {
 	prefix := p.prefixParseFns[p.c.Type]
 	if prefix == nil {
+		msg := fmt.Sprintf("missing parse function for token %s",
+			p.c.Type)
+		p.err(msg)
 		return nil
 	}
 	return prefix()
@@ -147,6 +152,16 @@ func (p *Parser) int() ast.Expression {
 		return nil
 	}
 	return &ast.IntegerLiteral{Token: p.c, Value: i}
+}
+
+func (p *Parser) prefix() ast.Expression {
+	expr := &ast.PrefixExpr{
+		Token:    p.c,
+		Operator: p.c.Literal,
+	}
+	p.next()
+	expr.Right = p.expr(Prefix)
+	return expr
 }
 
 // nextIfPeek checks if the next/peek token type matches t then call
