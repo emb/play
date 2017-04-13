@@ -201,3 +201,82 @@ func TestParsingPrefixExpressions(t *testing.T) {
 		testIntegerLiteral(t, expr.Right, tc.want)
 	}
 }
+
+func TestParsingInfixExpressions(t *testing.T) {
+	tests := []struct {
+		input     string
+		wantLeft  int64
+		wantOp    string
+		wantRight int64
+	}{
+		{"1 + 2;", 1, "+", 2},
+		{"1 - 2;", 1, "-", 2},
+		{"1 * 2;", 1, "*", 2},
+		{"1 / 2;", 1, "/", 2},
+		{"1 > 2;", 1, ">", 2},
+		{"1 < 2;", 1, "<", 2},
+		{"1 == 2;", 1, "==", 2},
+		{"1 != 2;", 1, "!=", 2},
+	}
+	for i, tc := range tests {
+		t.Logf("test[%d] %s", i, tc.input)
+		parse := New(lexer.New(tc.input))
+		program := parse.Program()
+		checkErrors(t, parse)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("program has %d statements, want 1",
+				len(program.Statements))
+
+		}
+		stmt, ok := program.Statements[0].(*ast.ExpressionStmt)
+		if !ok {
+			t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
+				program.Statements[0])
+		}
+		expr, ok := stmt.Expression.(*ast.InfixExpr)
+		if !ok {
+			t.Fatalf("stmt.Expression is of type %T, want *ast.InfixExpr",
+				stmt.Expression)
+		}
+		testIntegerLiteral(t, expr.Left, tc.wantLeft)
+		if expr.Operator != tc.wantOp {
+			t.Errorf("expr.Operator is %s, want %s",
+				expr.Operator, tc.wantOp)
+
+		}
+		testIntegerLiteral(t, expr.Right, tc.wantRight)
+	}
+}
+
+func TestOperatorPrecedenceParsing(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"-a * b", "((-a) * b)"},
+		{"!-a", "(!(-a))"},
+		{"a + b + c", "((a + b) + c)"},
+		{"a + b - c", "((a + b) - c)"},
+		{"a * b * c", "((a * b) * c)"},
+		{"a * b / c", "((a * b) / c)"},
+		{"a + b / c", "(a + (b / c))"},
+		{"a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"},
+		{"3 + 4; - 5 * 5", "(3 + 4)((-5) * 5)"},
+		{"5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"},
+		{"5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"},
+		{"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
+		{"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
+	}
+
+	for i, tc := range tests {
+		parse := New(lexer.New(tc.input))
+		program := parse.Program()
+		checkErrors(t, parse)
+
+		if program.String() != tc.want {
+			t.Errorf("test[%d] parse.Program() returns %q, want %q",
+				i, program, tc.want)
+		}
+	}
+}

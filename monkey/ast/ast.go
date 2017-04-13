@@ -153,10 +153,27 @@ type PrefixExpr struct {
 // TokenLiteral returns the literal value of the prefix expression
 func (p *PrefixExpr) TokenLiteral() string { return p.Token.Literal }
 
-// String reconstructs the input code of a prefix expersion
+// String reconstructs the input code of a prefix expression
 func (p *PrefixExpr) String() string {
 	if p == nil {
 		return ""
 	}
 	return fmt.Sprintf("(%s%s)", p.Operator, p.Right)
+}
+
+// InfixExpr describes expressions of the form 7 + 9
+type InfixExpr struct {
+	// Token describes the infix operator
+	Token    token.Token
+	Left     Expression
+	Operator string
+	Right    Expression
+}
+
+// TokenLiteral returns the literal value of the infix operator
+func (i *InfixExpr) TokenLiteral() string { return i.Token.Literal }
+
+// String reconstructs the input code of an infix expression
+func (i *InfixExpr) String() string {
+	return fmt.Sprintf("(%s %s %s)", i.Left, i.Operator, i.Right)
 }

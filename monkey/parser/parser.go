@@ -16,6 +16,7 @@ func New(l *lexer.Lexer) *Parser {
 		l:              l,
 		errors:         []string{},
 		prefixParseFns: map[token.Type]prefixParseFn{},
+		infixParseFns:  map[token.Type]infixParseFn{},
 	}
 
 	// Read two tokens, so both c,p are set.
@@ -27,6 +28,15 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.INT, p.int)
 	p.registerPrefix(token.BANG, p.prefix)
 	p.registerPrefix(token.MINUS, p.prefix)
+
+	p.registerInfix(token.PLUS, p.infix)
+	p.registerInfix(token.MINUS, p.infix)
+	p.registerInfix(token.ASTERISK, p.infix)
+	p.registerInfix(token.SLASH, p.infix)
+	p.registerInfix(token.EQ, p.infix)
+	p.registerInfix(token.NEQ, p.infix)
+	p.registerInfix(token.GT, p.infix)
+	p.registerInfix(token.LT, p.infix)
 
 	return p
 }
@@ -136,7 +146,16 @@ func (p *Parser) expr(prec precedence) ast.Expression {
 		p.err(msg)
 		return nil
 	}
-	return prefix()
+	left := prefix()
+	for !p.peekIs(token.SEMICOLON) && prec < p.pp() {
+		infix := p.infixParseFns[p.p.Type]
+		if infix == nil {
+			return left
+		}
+		p.next()
+		left = infix(left)
+	}
+	return left
 }
 
 func (p *Parser) ident() ast.Expression {
@@ -161,6 +180,18 @@ func (p *Parser) prefix() ast.Expression {
 	}
 	p.next()
 	expr.Right = p.expr(Prefix)
+	return expr
+}
+
+func (p *Parser) infix(left ast.Expression) ast.Expression {
+	expr := &ast.InfixExpr{
+		Token:    p.c,
+		Left:     left,
+		Operator: p.c.Literal,
+	}
+	prec := p.cp()
+	p.next()
+	expr.Right = p.expr(prec)
 	return expr
 }
 
@@ -192,6 +223,22 @@ func (p *Parser) err(msg string) {
 	p.errors = append(p.errors, msg)
 }
 
+// cp returns the current token precedence
+func (p *Parser) cp() precedence {
+	if prec, ok := precedences[p.c.Type]; ok {
+		return prec
+	}
+	return Lowest
+}
+
+// pp returns the peek token precedence
+func (p *Parser) pp() precedence {
+	if prec, ok := precedences[p.p.Type]; ok {
+		return prec
+	}
+	return Lowest
+}
+
 // precedence is going to be used define a list of operator precedence
 // used when parsing expressions
 type precedence int
@@ -206,3 +253,14 @@ const (
 	Prefix                 // -X or !X
 	Call                   // myFunction(x)
 )
+
+var precedences = map[token.Type]precedence{
+	token.EQ:       Equals,
+	token.NEQ:      Equals,
+	token.LT:       LessGreater,
+	token.GT:       LessGreater,
+	token.PLUS:     Sum,
+	token.MINUS:    Sum,
+	token.SLASH:    Product,
+	token.ASTERISK: Product,
+}
