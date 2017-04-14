@@ -28,6 +28,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.INT, p.int)
 	p.registerPrefix(token.BANG, p.prefix)
 	p.registerPrefix(token.MINUS, p.prefix)
+	p.registerPrefix(token.TRUE, p.bool)
+	p.registerPrefix(token.FALSE, p.bool)
 
 	p.registerInfix(token.PLUS, p.infix)
 	p.registerInfix(token.MINUS, p.infix)
@@ -193,6 +195,10 @@ func (p *Parser) infix(left ast.Expression) ast.Expression {
 	p.next()
 	expr.Right = p.expr(prec)
 	return expr
+}
+
+func (p *Parser) bool() ast.Expression {
+	return &ast.Boolean{Token: p.c, Value: p.currentIs(token.TRUE)}
 }
 
 // nextIfPeek checks if the next/peek token type matches t then call

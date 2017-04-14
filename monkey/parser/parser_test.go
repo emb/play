@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
 
@@ -267,6 +268,10 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{"5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"},
 		{"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
 		{"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
+		{"true", "true"},
+		{"false", "false"},
+		{"3 > 5 == false", "((3 > 5) == false)"},
+		{"3 < 5 == true", "((3 < 5) == true)"},
 	}
 
 	for i, tc := range tests {
@@ -277,6 +282,45 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		if program.String() != tc.want {
 			t.Errorf("test[%d] parse.Program() returns %q, want %q",
 				i, program, tc.want)
+		}
+	}
+}
+
+func TestBooleanExpressions(t *testing.T) {
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		{"true;", true},
+		{"false;", false},
+	}
+	for i, tc := range tests {
+		t.Logf("test[%d] input %q", i, tc.input)
+		parse := New(lexer.New(tc.input))
+		program := parse.Program()
+		checkErrors(t, parse)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements has %d, want 1",
+				len(program.Statements))
+		}
+		stmt, ok := program.Statements[0].(*ast.ExpressionStmt)
+		if !ok {
+			t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
+				program.Statements[0])
+		}
+		b, ok := stmt.Expression.(*ast.Boolean)
+		if !ok {
+			t.Fatalf("stmt.Expression is of type %T, want *ast.Boolean",
+				stmt.Expression)
+		}
+		if b.Value != tc.want {
+			t.Errorf(".Value is %t, want %t", b.Value, tc.want)
+		}
+		literal := fmt.Sprintf("%t", tc.want)
+		if b.Token.Literal != literal {
+			t.Errorf(".Token.Literal is %s, want %s",
+				b.Token.Literal, literal)
 		}
 	}
 }

@@ -177,3 +177,20 @@ func (i *InfixExpr) TokenLiteral() string { return i.Token.Literal }
 func (i *InfixExpr) String() string {
 	return fmt.Sprintf("(%s %s %s)", i.Left, i.Operator, i.Right)
 }
+
+// Boolean describes binary expressions such as, true and false
+type Boolean struct {
+	Token token.Token
+	Value bool
+}
+
+// TokenLiteral returns the expression literal
+func (b *Boolean) TokenLiteral() string { return b.Token.Literal }
+
+// String construct the input code for boolean expressions
+func (b *Boolean) String() string {
+	if b == nil {
+		return ""
+	}
+	return b.Token.Literal
+}
