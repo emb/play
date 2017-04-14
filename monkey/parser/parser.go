@@ -30,6 +30,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.MINUS, p.prefix)
 	p.registerPrefix(token.TRUE, p.bool)
 	p.registerPrefix(token.FALSE, p.bool)
+	p.registerPrefix(token.LPAREN, p.grouped)
 
 	p.registerInfix(token.PLUS, p.infix)
 	p.registerInfix(token.MINUS, p.infix)
@@ -199,6 +200,15 @@ func (p *Parser) infix(left ast.Expression) ast.Expression {
 
 func (p *Parser) bool() ast.Expression {
 	return &ast.Boolean{Token: p.c, Value: p.currentIs(token.TRUE)}
+}
+
+func (p *Parser) grouped() ast.Expression {
+	p.next()
+	expr := p.expr(Lowest)
+	if !p.nextIfPeek(token.RPAREN) {
+		return nil
+	}
+	return expr
 }
 
 // nextIfPeek checks if the next/peek token type matches t then call
