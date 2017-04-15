@@ -19,5 +19,7 @@ func main() {
 
 	fmt.Printf("Hello %s! This is the Monkey programming language!\n", user.Username)
 	fmt.Println("Feel free to play!")
-	repl.Start(os.Stdin, os.Stdout)
+	if err := repl.Start(os.Stdin, os.Stdout); err != nil {
+		log.Fatal(err)
+	}
 }

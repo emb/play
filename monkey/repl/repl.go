@@ -7,7 +7,7 @@ import (
 	"io"
 
 	"github.com/emb/play/monkey/lexer"
-	"github.com/emb/play/monkey/token"
+	"github.com/emb/play/monkey/parser"
 )
 
 func prompt(w io.Writer) {
@@ -19,10 +19,35 @@ func Start(in io.Reader, out io.Writer) error {
 	scanner := bufio.NewScanner(in)
 	for prompt(out); scanner.Scan(); prompt(out) {
 		line := scanner.Text()
-		l := lexer.New(line)
-		for tok := l.NextToken(); tok.Type != token.EOF; tok = l.NextToken() {
-			fmt.Fprintf(out, "%+v\n", tok)
+		parse := parser.New(lexer.New(line))
+		program := parse.Program()
+		if errs := parse.Errors(); len(errs) != 0 {
+			displayErrors(out, errs)
+			continue
 		}
+		fmt.Fprintf(out, "%s\n", program)
 	}
 	return scanner.Err()
+}
+
+const monkey = `            __,__
+   .--.  .-"     "-.  .--.
+  / .. \/  .-. .-.  \/ .. \
+ | |  '|  /   Y   \  |'  | |
+ | \   \  \ 0 | 0 /  /   / |
+  \ '- ,\.-"""""""-./, -' /
+   ''-' /_   ^ ^   _\ '-''
+       |  \._   _./  |
+       \   \ '~' /   /
+        '._ '-=-' _.'
+           '-----'
+`
+
+func displayErrors(out io.Writer, errs []error) {
+	io.WriteString(out, monkey)
+	fmt.Fprint(out, "Woops! We ran into some monkey business here!\n")
+	fmt.Fprint(out, "   parser errors:\n")
+	for _, err := range errs {
+		fmt.Fprintf(out, "\t* %s\n", err)
+	}
 }

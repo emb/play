@@ -14,7 +14,7 @@ import (
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{
 		l:              l,
-		errors:         []string{},
+		errors:         []error{},
 		prefixParseFns: map[token.Type]prefixParseFn{},
 		infixParseFns:  map[token.Type]infixParseFn{},
 	}
@@ -63,7 +63,7 @@ type Parser struct {
 	prefixParseFns map[token.Type]prefixParseFn
 	infixParseFns  map[token.Type]infixParseFn
 
-	errors []string
+	errors []error
 }
 
 // registerPrefix registers a prefix parsing function
@@ -98,6 +98,9 @@ func (p *Parser) Program() *ast.Program {
 	}
 	return program
 }
+
+// Errors returns a list of parser errors
+func (p *Parser) Errors() []error { return p.errors }
 
 func (p *Parser) statement() ast.Statement {
 	switch p.c.Type {
@@ -149,9 +152,7 @@ func (p *Parser) exprStmt() *ast.ExpressionStmt {
 func (p *Parser) expr(prec precedence) ast.Expression {
 	prefix := p.prefixParseFns[p.c.Type]
 	if prefix == nil {
-		msg := fmt.Sprintf("missing parse function for token %s",
-			p.c.Type)
-		p.err(msg)
+		p.err("missing parse function for token %s", p.c.Type)
 		return nil
 	}
 	left := prefix()
@@ -173,9 +174,7 @@ func (p *Parser) ident() ast.Expression {
 func (p *Parser) int() ast.Expression {
 	i, err := strconv.ParseInt(p.c.Literal, 10, 64)
 	if err != nil {
-		msg := fmt.Sprintf("error parsing an integer %q: %s",
-			p.c.Literal, err)
-		p.err(msg)
+		p.err("error parsing an integer %q: %s", p.c.Literal, err)
 		return nil
 	}
 	return &ast.IntegerLiteral{Token: p.c, Value: i}
@@ -325,9 +324,7 @@ func (p *Parser) nextIfPeek(t token.Type) bool {
 		p.next()
 		return true
 	}
-	msg := fmt.Sprintf("expected next token to be %s, got %s instead",
-		t, p.p.Type)
-	p.err(msg)
+	p.err("expected next token to be %s, got %s instead", t, p.p.Type)
 	return false
 }
 
@@ -342,8 +339,8 @@ func (p *Parser) peekIs(t token.Type) bool {
 }
 
 // error append an error to the list of errors in the parser.
-func (p *Parser) err(msg string) {
-	p.errors = append(p.errors, msg)
+func (p *Parser) err(msg string, a ...interface{}) {
+	p.errors = append(p.errors, fmt.Errorf(msg, a))
 }
 
 // cp returns the current token precedence
