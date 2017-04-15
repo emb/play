@@ -70,6 +70,35 @@ func TestEvalBooleanExpression(t *testing.T) {
 	}
 }
 
+func TestIfElseExpression(t *testing.T) {
+	tests := []struct {
+		input string
+		want  interface{}
+	}{
+		{"if (true) { 10 }", 10},
+		{"if (false) { 10 }", nil},
+		{"if (1) { 10 }", 10},
+		{"if (1 < 2) { 10 }", 10},
+		{"if (1 > 2) { 10 }", nil},
+		{"if (1 > 2) { 10 } else { 20 }", 20},
+		{"if (1 < 2) { 10 } else { 20 }", 10},
+		{"if (3 == 3) { true } else { false}", true},
+		{"if (3 == 4) { true } else { false}", false},
+	}
+	for i, tc := range tests {
+		t.Logf("test[%d] input %q", i, tc.input)
+		result := testEval(tc.input)
+		switch w := tc.want.(type) {
+		case int:
+			testIntObj(t, result, int64(w))
+		case bool:
+			testBoolObj(t, result, w)
+		default:
+			testIsNull(t, result)
+		}
+	}
+}
+
 func testEval(input string) object.Object {
 	parse := parser.New(lexer.New(input))
 	return Eval(parse.Program())
@@ -92,5 +121,11 @@ func testBoolObj(t *testing.T, obj object.Object, want bool) {
 	}
 	if bool(*val) != want {
 		t.Errorf("ob has a value %t, want %t", *val, want)
+	}
+}
+
+func testIsNull(t *testing.T, obj object.Object) {
+	if obj != &null {
+		t.Errorf("obj is %+v, want object.Null", obj)
 	}
 }

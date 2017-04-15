@@ -21,13 +21,11 @@ func Eval(node ast.Node) object.Object {
 	case *ast.Program:
 		// The result of a program is equivalent to the result
 		// of the last statement in Monkey.
-		var result object.Object
-		for _, stmt := range n.Statements {
-			result = Eval(stmt)
-		}
-		return result
+		return evalStmts(n.Statements)
 	case *ast.ExpressionStmt:
 		return Eval(n.Expression)
+	case *ast.BlockStmt:
+		return evalStmts(n.Statements)
 	// Expressions
 	case *ast.IntegerLiteral:
 		i := object.Int(n.Value)
@@ -45,6 +43,15 @@ func Eval(node ast.Node) object.Object {
 		}
 	case *ast.InfixExpr:
 		return evalInfix(n.Operator, Eval(n.Left), Eval(n.Right))
+	case *ast.IfExpr:
+		condition := Eval(n.Condition)
+		if truthy(condition) {
+			return Eval(n.Consequence)
+		} else if n.Alternative != nil {
+			return Eval(n.Alternative)
+		} else {
+			return &null
+		}
 	}
 	return nil
 }
@@ -59,6 +66,16 @@ func objb(b bool) *object.Bool {
 func obji(i int64) *object.Int {
 	r := object.Int(i)
 	return &r
+}
+
+// evalStmts evaluate each statement and returns the result of the
+// last one.
+func evalStmts(stmts []ast.Statement) object.Object {
+	var result object.Object
+	for _, stmt := range stmts {
+		result = Eval(stmt)
+	}
+	return result
 }
 
 func evalBang(operand object.Object) object.Object {
@@ -125,5 +142,19 @@ func evalInfixInts(op string, left, right object.Object) object.Object {
 		return objb(l != r)
 	default:
 		return &null
+	}
+}
+
+func truthy(obj object.Object) bool {
+	switch o := obj.(type) {
+	case *object.Bool:
+		if *o == yes {
+			return true
+		}
+		return false
+	case *object.Nul:
+		return false
+	default:
+		return true
 	}
 }
