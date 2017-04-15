@@ -119,8 +119,9 @@ func (p *Parser) letStmt() *ast.LetStmt {
 	if !p.nextIfPeek(token.ASSIGN) {
 		return nil
 	}
-	// TODO: skipping expressions for now until a semicolon
-	for !p.currentIs(token.SEMICOLON) {
+	p.next()
+	stmt.Value = p.expr(Lowest)
+	if p.peekIs(token.SEMICOLON) {
 		p.next()
 	}
 	return stmt
@@ -128,8 +129,9 @@ func (p *Parser) letStmt() *ast.LetStmt {
 
 func (p *Parser) retStmt() *ast.ReturnStmt {
 	stmt := &ast.ReturnStmt{Token: p.c}
-	// TODO: skipping expression for now until a semicolon
-	for !p.currentIs(token.SEMICOLON) {
+	p.next()
+	stmt.Value = p.expr(Lowest)
+	if p.peekIs(token.SEMICOLON) {
 		p.next()
 	}
 	return stmt

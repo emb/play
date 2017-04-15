@@ -10,39 +10,50 @@ import (
 )
 
 func TestLetStatements(t *testing.T) {
-	input := `
-let x = 5;
-let y = 9;
-let foobar = 989865;
-`
-	l := lexer.New(input)
-	p := New(l)
-
-	program := p.Program()
-	checkErrors(t, p)
-	if program == nil {
-		t.Fatal("p.Progarm() returned nil")
-	}
-	if len(program.Statements) != 3 {
-		t.Fatalf("program.Statements has %d, want 3",
-			len(program.Statements))
-	}
-
 	tests := []struct {
+		input     string
 		wantIdent string
+		wantValue interface{}
 	}{
-		{"x"},
-		{"y"},
-		{"foobar"},
+		{"let x = 5;", "x", 5},
+		{"let y = true;", "y", true},
+		{"let foo = bar", "foo", "bar"},
 	}
-
 	for i, tc := range tests {
-		stmt := program.Statements[i]
+		t.Logf("test[%d] input %q", i, tc.input)
+		parse := New(lexer.New(tc.input))
+		program := parse.Program()
+		checkErrors(t, parse)
+
+		ensureStatements(t, program, 1)
+		stmt := program.Statements[0]
 		testLet(t, stmt, tc.wantIdent)
+		v := stmt.(*ast.LetStmt).Value
+		testLiteralExpr(t, v, tc.wantValue)
 	}
 }
 
 func TestReturnStatements(t *testing.T) {
+	tests := []struct {
+		input string
+		want  interface{}
+	}{
+		{"return 5;", 5},
+		{"return false;", false},
+		{"return foo;", "foo"},
+	}
+	for i, tc := range tests {
+		t.Logf("test[%d] input %q", i, tc.input)
+		parse := New(lexer.New(tc.input))
+		program := parse.Program()
+		checkErrors(t, parse)
+
+		ensureStatements(t, program, 1)
+		stmt := program.Statements[0]
+		testReturn(t, stmt)
+		v := stmt.(*ast.ReturnStmt).Value
+		testLiteralExpr(t, v, tc.want)
+	}
 	input := `
 return 5;
 return 10;
@@ -52,11 +63,7 @@ return 94897597;
 	program := parser.Program()
 	checkErrors(t, parser)
 
-	if len(program.Statements) != 3 {
-		t.Fatalf("program.Statements has %d, want 3",
-			len(program.Statements))
-	}
-
+	ensureStatements(t, program, 3)
 	for _, stmt := range program.Statements {
 		ret, ok := stmt.(*ast.ReturnStmt)
 		if !ok {
@@ -76,15 +83,7 @@ func TestIdentifierExpression(t *testing.T) {
 	program := parser.Program()
 	checkErrors(t, parser)
 
-	if len(program.Statements) != 1 {
-		t.Fatalf("program has %d statements, want 1",
-			len(program.Statements))
-	}
-	stmt, ok := program.Statements[0].(*ast.ExpressionStmt)
-	if !ok {
-		t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
-			program.Statements[0])
-	}
+	stmt := firstExpression(t, program)
 	testIdent(t, stmt.Expression, "monkeySee")
 }
 
@@ -94,15 +93,7 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	program := parser.Program()
 	checkErrors(t, parser)
 
-	if len(program.Statements) != 1 {
-		t.Fatalf("program has %d statements, want 1",
-			len(program.Statements))
-	}
-	stmt, ok := program.Statements[0].(*ast.ExpressionStmt)
-	if !ok {
-		t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
-			program.Statements[0])
-	}
+	stmt := firstExpression(t, program)
 	testIntegerLiteral(t, stmt.Expression, 7)
 }
 
@@ -125,15 +116,7 @@ func TestParsingPrefixExpressions(t *testing.T) {
 		program := parser.Program()
 		checkErrors(t, parser)
 
-		if len(program.Statements) != 1 {
-			t.Fatalf("program has %d statements, want 1",
-				len(program.Statements))
-		}
-		stmt, ok := program.Statements[0].(*ast.ExpressionStmt)
-		if !ok {
-			t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
-				program.Statements[0])
-		}
+		stmt := firstExpression(t, program)
 		expr, ok := stmt.Expression.(*ast.PrefixExpr)
 		if !ok {
 			t.Fatalf("stmt.Expression is of type %T, want *ast.PrefixExpr",
@@ -172,16 +155,7 @@ func TestParsingInfixExpressions(t *testing.T) {
 		program := parse.Program()
 		checkErrors(t, parse)
 
-		if len(program.Statements) != 1 {
-			t.Fatalf("program has %d statements, want 1",
-				len(program.Statements))
-
-		}
-		stmt, ok := program.Statements[0].(*ast.ExpressionStmt)
-		if !ok {
-			t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
-				program.Statements[0])
-		}
+		stmt := firstExpression(t, program)
 		testInfix(t, stmt.Expression, tc.wantLeft, tc.wantOp, tc.wantRight)
 	}
 }
@@ -257,15 +231,7 @@ func TestBooleanExpressions(t *testing.T) {
 		program := parse.Program()
 		checkErrors(t, parse)
 
-		if len(program.Statements) != 1 {
-			t.Fatalf("program.Statements has %d, want 1",
-				len(program.Statements))
-		}
-		stmt, ok := program.Statements[0].(*ast.ExpressionStmt)
-		if !ok {
-			t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
-				program.Statements[0])
-		}
+		stmt := firstExpression(t, program)
 		testBooleanLiteral(t, stmt.Expression, tc.want)
 	}
 }
@@ -276,16 +242,7 @@ func TestIfExpresssion(t *testing.T) {
 	program := parse.Program()
 	checkErrors(t, parse)
 
-	if len(program.Statements) != 1 {
-		t.Fatalf("program.Statements has %d, want 1",
-			len(program.Statements))
-
-	}
-	stmt, ok := program.Statements[0].(*ast.ExpressionStmt)
-	if !ok {
-		t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
-			program.Statements[0])
-	}
+	stmt := firstExpression(t, program)
 	ifexpr, ok := stmt.Expression.(*ast.IfExpr)
 	if !ok {
 		t.Fatalf("ifexpr is of type %T, want *ast.IfExpr", ifexpr)
@@ -313,16 +270,7 @@ func TestIfAlternativeExpresssion(t *testing.T) {
 	program := parse.Program()
 	checkErrors(t, parse)
 
-	if len(program.Statements) != 1 {
-		t.Fatalf("program.Statements has %d, want 1",
-			len(program.Statements))
-
-	}
-	stmt, ok := program.Statements[0].(*ast.ExpressionStmt)
-	if !ok {
-		t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
-			program.Statements[0])
-	}
+	stmt := firstExpression(t, program)
 	ifexpr, ok := stmt.Expression.(*ast.IfExpr)
 	if !ok {
 		t.Fatalf("ifexpr is of type %T, want *ast.IfExpr", ifexpr)
@@ -348,16 +296,7 @@ func TestFuctionLiteralExpression(t *testing.T) {
 	program := parse.Program()
 	checkErrors(t, parse)
 
-	if len(program.Statements) != 1 {
-		t.Fatalf("program.Statements has %d, want 1",
-			len(program.Statements))
-
-	}
-	stmt, ok := program.Statements[0].(*ast.ExpressionStmt)
-	if !ok {
-		t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
-			program.Statements[0])
-	}
+	stmt := firstExpression(t, program)
 	fn, ok := stmt.Expression.(*ast.FunctionLiteral)
 	if !ok {
 		t.Fatalf("stmt.Expression is of type %T, want *ast.FunctionLiteral",
@@ -395,7 +334,7 @@ func TestFunctionParametersParsing(t *testing.T) {
 		program := parse.Program()
 		checkErrors(t, parse)
 
-		stmt := program.Statements[0].(*ast.ExpressionStmt)
+		stmt := firstExpression(t, program)
 		fn := stmt.Expression.(*ast.FunctionLiteral)
 		if len(fn.Parameters) != len(tc.want) {
 			t.Errorf("fn has %d params, want %d",
@@ -413,16 +352,7 @@ func TestCallExpression(t *testing.T) {
 	program := parse.Program()
 	checkErrors(t, parse)
 
-	if len(program.Statements) != 1 {
-		t.Fatalf("program.Statements has %d, want 1",
-			len(program.Statements))
-
-	}
-	stmt, ok := program.Statements[0].(*ast.ExpressionStmt)
-	if !ok {
-		t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
-			program.Statements[0])
-	}
+	stmt := firstExpression(t, program)
 	call, ok := stmt.Expression.(*ast.CallExpr)
 	if !ok {
 		t.Fatalf("stmt.Expression is of type %T, want *ast.CallExpr",
@@ -435,6 +365,24 @@ func TestCallExpression(t *testing.T) {
 	testLiteralExpr(t, call.Arguments[0], 1)
 	testInfix(t, call.Arguments[1], 2, "*", 3)
 	testInfix(t, call.Arguments[2], 4, "+", 5)
+}
+
+func ensureStatements(t *testing.T, program *ast.Program, n int) {
+	if len(program.Statements) != n {
+		t.Fatalf("program.Statements has %d, want %d",
+			len(program.Statements), n)
+
+	}
+}
+
+func firstExpression(t *testing.T, program *ast.Program) *ast.ExpressionStmt {
+	ensureStatements(t, program, 1)
+	stmt, ok := program.Statements[0].(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
+			program.Statements[0])
+	}
+	return stmt
 }
 
 func testIdent(t *testing.T, expr ast.Expression, value string) {
@@ -530,6 +478,18 @@ func testBooleanLiteral(t *testing.T, expr ast.Expression, value bool) {
 	}
 
 }
+
+func testReturn(t *testing.T, stmt ast.Statement) {
+	ret, ok := stmt.(*ast.ReturnStmt)
+	if !ok {
+		t.Errorf("statement type is %T, want *ast.Return", stmt)
+	}
+	if ret.TokenLiteral() != "return" {
+		t.Errorf(`.TokenLiteral() is %q, want "return"`,
+			ret.TokenLiteral())
+	}
+}
+
 func checkErrors(t *testing.T, p *Parser) {
 	errors := p.errors
 	if len(errors) == 0 {
