@@ -42,6 +42,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.NEQ, p.infix)
 	p.registerInfix(token.GT, p.infix)
 	p.registerInfix(token.LT, p.infix)
+	p.registerInfix(token.LPAREN, p.call)
 
 	return p
 }
@@ -288,6 +289,33 @@ func (p *Parser) params() []*ast.Identifier {
 	return idents
 }
 
+func (p *Parser) call(callable ast.Expression) ast.Expression {
+	return &ast.CallExpr{
+		Token:     p.c,
+		Function:  callable,
+		Arguments: p.args(),
+	}
+}
+
+func (p *Parser) args() []ast.Expression {
+	args := []ast.Expression{}
+	if p.peekIs(token.RPAREN) { // Empty arguments
+		p.next()
+		return args
+	}
+	p.next()
+	args = append(args, p.expr(Lowest))
+	for p.peekIs(token.COMMA) {
+		p.next() // advance to comma
+		p.next() // prepare to parse next expression
+		args = append(args, p.expr(Lowest))
+	}
+	if !p.nextIfPeek(token.RPAREN) {
+		return nil
+	}
+	return args
+}
+
 // nextIfPeek checks if the next/peek token type matches t then call
 // next.
 func (p *Parser) nextIfPeek(t token.Type) bool {
@@ -356,4 +384,5 @@ var precedences = map[token.Type]precedence{
 	token.MINUS:    Sum,
 	token.SLASH:    Product,
 	token.ASTERISK: Product,
+	token.LPAREN:   Call,
 }

@@ -202,8 +202,14 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{"3 + 4; - 5 * 5", "(3 + 4)((-5) * 5)"},
 		{"5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"},
 		{"5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"},
-		{"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
-		{"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
+		{
+			"3 + 4 * 5 == 3 * 1 + 4 * 5",
+			"((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+		},
+		{
+			"3 + 4 * 5 == 3 * 1 + 4 * 5",
+			"((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+		},
 		{"true", "true"},
 		{"false", "false"},
 		{"3 > 5 == false", "((3 > 5) == false)"},
@@ -213,9 +219,19 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{"2 / (5 + 5)", "(2 / (5 + 5))"},
 		{"-(5 + 5)", "(-(5 + 5))"},
 		{"!(true == true)", "(!(true == true))"},
+		{"a + add(b * c) + d", "((a + add((b * c))) + d)"},
+		{
+			"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+			"add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+		},
+		{
+			"add(a + b + c * d / f + g)",
+			"add((((a + b) + ((c * d) / f)) + g))",
+		},
 	}
 
 	for i, tc := range tests {
+		t.Logf("test[i] input %q", tc.input)
 		parse := New(lexer.New(tc.input))
 		program := parse.Program()
 		checkErrors(t, parse)
@@ -389,6 +405,36 @@ func TestFunctionParametersParsing(t *testing.T) {
 			testLiteralExpr(t, fn.Parameters[i], p)
 		}
 	}
+}
+
+func TestCallExpression(t *testing.T) {
+	input := "add(1, 2 * 3, 4 + 5);"
+	parse := New(lexer.New(input))
+	program := parse.Program()
+	checkErrors(t, parse)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements has %d, want 1",
+			len(program.Statements))
+
+	}
+	stmt, ok := program.Statements[0].(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
+			program.Statements[0])
+	}
+	call, ok := stmt.Expression.(*ast.CallExpr)
+	if !ok {
+		t.Fatalf("stmt.Expression is of type %T, want *ast.CallExpr",
+			stmt.Expression)
+	}
+	testIdent(t, call.Function, "add")
+	if len(call.Arguments) != 3 {
+		t.Fatalf("call has %d arguments, want 3", len(call.Arguments))
+	}
+	testLiteralExpr(t, call.Arguments[0], 1)
+	testInfix(t, call.Arguments[1], 2, "*", 3)
+	testInfix(t, call.Arguments[2], 4, "+", 5)
 }
 
 func testIdent(t *testing.T, expr ast.Expression, value string) {

@@ -278,3 +278,31 @@ func (b *BlockStmt) String() string {
 	buf.WriteByte('}')
 	return buf.String()
 }
+
+// CallExpr describes a function call in the language
+type CallExpr struct {
+	// Token will hold Left Parenthesis ( in a call
+	Token     token.Token
+	Function  Expression
+	Arguments []Expression
+}
+
+// TokenLiteral returns the first parenthesis of a call expression.
+func (c *CallExpr) TokenLiteral() string { return c.Token.Literal }
+
+// String returns a string representing a function call
+func (c *CallExpr) String() string {
+	if c == nil {
+		return ""
+	}
+	var buf bytes.Buffer
+	args := make([]string, len(c.Arguments))
+	for i, a := range c.Arguments {
+		args[i] = a.String()
+	}
+	buf.WriteString(c.Function.String())
+	buf.WriteByte('(')
+	buf.WriteString(strings.Join(args, ", "))
+	buf.WriteByte(')')
+	return buf.String()
+}
