@@ -18,7 +18,20 @@ func TestEvalIntegerExpressions(t *testing.T) {
 	}
 	for _, tc := range tests {
 		evaled := testEval(tc.input)
-		testIntegerObj(t, evaled, tc.want)
+		testIntObj(t, evaled, tc.want)
+	}
+}
+
+func TestEvalBooleanExpression(t *testing.T) {
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		{"true", true},
+		{"false", false},
+	}
+	for _, tc := range tests {
+		testBoolObj(t, testEval(tc.input), tc.want)
 	}
 }
 
@@ -27,12 +40,22 @@ func testEval(input string) object.Object {
 	return Eval(parse.Program())
 }
 
-func testIntegerObj(t *testing.T, obj object.Object, want int64) {
+func testIntObj(t *testing.T, obj object.Object, want int64) {
 	val, ok := obj.(*object.Int)
 	if !ok {
-		t.Errorf("obj is of type %T, want *object.Int", obj)
+		t.Fatalf("obj is of type %T, want *object.Int", obj)
 	}
 	if int64(*val) != want {
 		t.Errorf("obj has a value %d, want %d", *val, want)
+	}
+}
+
+func testBoolObj(t *testing.T, obj object.Object, want bool) {
+	val, ok := obj.(*object.Bool)
+	if !ok {
+		t.Fatalf("ob is of type %T, want *object.Bool", obj)
+	}
+	if bool(*val) != want {
+		t.Errorf("ob has a value %t, want %t", *val, want)
 	}
 }

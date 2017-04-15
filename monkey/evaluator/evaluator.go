@@ -20,9 +20,12 @@ func Eval(node ast.Node) object.Object {
 		return result
 	case *ast.ExpressionStmt:
 		return Eval(n.Expression)
-	// Expressionns
+	// Expressions
 	case *ast.IntegerLiteral:
 		i := object.Int(n.Value)
+		return &i
+	case *ast.Boolean:
+		i := object.Bool(n.Value)
 		return &i
 	}
 	return nil
