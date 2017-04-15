@@ -33,10 +33,7 @@ func Eval(node ast.Node) object.Object {
 		i := object.Int(n.Value)
 		return &i
 	case *ast.Boolean:
-		if n.Value {
-			return &yes
-		}
-		return &no
+		return objb(n.Value)
 	case *ast.PrefixExpr:
 		switch n.Operator {
 		case token.BANG:
@@ -50,6 +47,18 @@ func Eval(node ast.Node) object.Object {
 		return evalInfix(n.Operator, Eval(n.Left), Eval(n.Right))
 	}
 	return nil
+}
+
+func objb(b bool) *object.Bool {
+	if b {
+		return &yes
+	}
+	return &no
+}
+
+func obji(i int64) *object.Int {
+	r := object.Int(i)
+	return &r
 }
 
 func evalBang(operand object.Object) object.Object {
@@ -79,6 +88,16 @@ func evalInfix(op string, left object.Object, right object.Object) object.Object
 	switch {
 	case left.Type() == right.Type() && left.Type() == object.Integer:
 		return evalInfixInts(op, left, right)
+
+	// NOTE: the following comparisons are pointer
+	// comparisons and since we deal with all other types
+	// before we reach here we assume that what remains is
+	// a comparison of the Boolean type.
+	case op == token.EQ:
+		return objb(left == right)
+	case op == token.NEQ:
+		return objb(left != right)
+
 	default:
 		return &null
 	}
@@ -89,18 +108,21 @@ func evalInfixInts(op string, left, right object.Object) object.Object {
 	r := int64(*right.(*object.Int))
 	switch op {
 	case token.PLUS:
-		ret := object.Int(l + r)
-		return &ret
+		return obji(l + r)
 	case token.MINUS:
-		ret := object.Int(l - r)
-		return &ret
+		return obji(l - r)
 	case token.ASTERISK:
-		ret := object.Int(l * r)
-		return &ret
+		return obji(l * r)
 	case token.SLASH:
-		ret := object.Int(l / r)
-		return &ret
-
+		return obji(l / r)
+	case token.LT:
+		return objb(l < r)
+	case token.GT:
+		return objb(l > r)
+	case token.EQ:
+		return objb(l == r)
+	case token.NEQ:
+		return objb(l != r)
 	default:
 		return &null
 	}
