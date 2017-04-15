@@ -254,6 +254,78 @@ func TestBooleanExpressions(t *testing.T) {
 	}
 }
 
+func TestIfExpresssion(t *testing.T) {
+	input := `if (x < y) { x }`
+	parse := New(lexer.New(input))
+	program := parse.Program()
+	checkErrors(t, parse)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements has %d, want 1",
+			len(program.Statements))
+
+	}
+	stmt, ok := program.Statements[0].(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
+			program.Statements[0])
+	}
+	ifexpr, ok := stmt.Expression.(*ast.IfExpr)
+	if !ok {
+		t.Fatalf("ifexpr is of type %T, want *ast.IfExpr", ifexpr)
+	}
+	testInfix(t, ifexpr.Condition, "x", "<", "y")
+	if len(ifexpr.Consequence.Statements) != 1 {
+		t.Fatalf("ifexp.Consequence.Statements has %d statements, want 1",
+			len(ifexpr.Consequence.Statements))
+	}
+	consq, ok := ifexpr.Consequence.Statements[0].(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("Consequence.Statements[0] is of type %T, want *ast.ExpressionStmt",
+			ifexpr.Consequence.Statements[0])
+	}
+	testIdent(t, consq.Expression, "x")
+	if ifexpr.Alternative != nil {
+		t.Errorf("ifexpr.Alternative is %+v, want nil",
+			ifexpr.Alternative)
+	}
+}
+
+func TestIfAlternativeExpresssion(t *testing.T) {
+	input := `if (x < y) { x } else { y }`
+	parse := New(lexer.New(input))
+	program := parse.Program()
+	checkErrors(t, parse)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements has %d, want 1",
+			len(program.Statements))
+
+	}
+	stmt, ok := program.Statements[0].(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
+			program.Statements[0])
+	}
+	ifexpr, ok := stmt.Expression.(*ast.IfExpr)
+	if !ok {
+		t.Fatalf("ifexpr is of type %T, want *ast.IfExpr", ifexpr)
+	}
+	if ifexpr.Alternative == nil {
+		t.Error("ifexpr.Alternative is nil")
+	}
+	if len(ifexpr.Alternative.Statements) != 1 {
+		t.Fatalf("ifexp.Alternative.Statements has %d statements, want 1",
+			len(ifexpr.Alternative.Statements))
+	}
+	alt, ok := ifexpr.Alternative.Statements[0].(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("Alternative.Statements[0] is of type %T, want *ast.ExpressionStmt",
+			ifexpr.Consequence.Statements[0])
+	}
+	testIdent(t, alt.Expression, "y")
+}
+
 func testIdent(t *testing.T, expr ast.Expression, value string) {
 	ident, ok := expr.(*ast.Identifier)
 	if !ok {

@@ -194,3 +194,57 @@ func (b *Boolean) String() string {
 	}
 	return b.Token.Literal
 }
+
+// IfExpr describes if expressions. These are not statements they
+// produce a value.
+type IfExpr struct {
+	// Token hold the `if` token.
+	Token       token.Token
+	Condition   Expression
+	Consequence *BlockStmt
+	Alternative *BlockStmt
+}
+
+// TokenLiteral returns a string representing the first token of an if
+// expression.
+func (i *IfExpr) TokenLiteral() string { return i.Token.Literal }
+
+// String returns a string representing the if expression code.
+func (i *IfExpr) String() string {
+	var buf bytes.Buffer
+	buf.WriteString("if ")
+	buf.WriteString(i.Condition.String())
+	buf.WriteByte(' ')
+	buf.WriteString(i.Consequence.String())
+	if i.Alternative != nil {
+		buf.WriteString(" else ")
+		buf.WriteString(i.Alternative.String())
+	}
+	return buf.String()
+}
+
+// BlockStmt describes a list of statements that belongs to IfExpr and
+// FnExpr.
+type BlockStmt struct {
+	// Token describes the opening brace `{` of the block statement.
+	Token      token.Token
+	Statements []Statement
+}
+
+// TokenLiteral returns a string representing the opening of a block
+// statement.
+func (b *BlockStmt) TokenLiteral() string { return b.Token.Literal }
+
+// String returns a string representation of block statement code.
+func (b *BlockStmt) String() string {
+	if b == nil {
+		return ""
+	}
+	var buf bytes.Buffer
+	buf.WriteByte('{')
+	for _, s := range b.Statements {
+		buf.WriteString(s.String())
+	}
+	buf.WriteByte('}')
+	return buf.String()
+}

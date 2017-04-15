@@ -31,6 +31,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.TRUE, p.bool)
 	p.registerPrefix(token.FALSE, p.bool)
 	p.registerPrefix(token.LPAREN, p.grouped)
+	p.registerPrefix(token.IF, p.ifexpr)
 
 	p.registerInfix(token.PLUS, p.infix)
 	p.registerInfix(token.MINUS, p.infix)
@@ -209,6 +210,43 @@ func (p *Parser) grouped() ast.Expression {
 		return nil
 	}
 	return expr
+}
+
+func (p *Parser) ifexpr() ast.Expression {
+	expr := &ast.IfExpr{Token: p.c}
+	if !p.nextIfPeek(token.LPAREN) {
+		return nil
+	}
+	p.next()
+	expr.Condition = p.expr(Lowest)
+	if !p.nextIfPeek(token.RPAREN) {
+		return nil
+	}
+	if !p.nextIfPeek(token.LBRACE) {
+		return nil
+	}
+	expr.Consequence = p.block()
+	if p.peekIs(token.ELSE) {
+		p.next()
+		if !p.nextIfPeek(token.LBRACE) {
+			return nil
+		}
+		expr.Alternative = p.block()
+	}
+	return expr
+}
+
+func (p *Parser) block() *ast.BlockStmt {
+	block := &ast.BlockStmt{Token: p.c, Statements: []ast.Statement{}}
+	p.next()
+	for !p.currentIs(token.RBRACE) && !p.currentIs(token.EOF) {
+		stmt := p.statement()
+		if stmt != nil {
+			block.Statements = append(block.Statements, stmt)
+		}
+		p.next()
+	}
+	return block
 }
 
 // nextIfPeek checks if the next/peek token type matches t then call
