@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/emb/play/monkey/evaluator"
 	"github.com/emb/play/monkey/lexer"
 	"github.com/emb/play/monkey/parser"
 )
@@ -25,7 +26,11 @@ func Start(in io.Reader, out io.Writer) error {
 			displayErrors(out, errs)
 			continue
 		}
-		fmt.Fprintf(out, "%s\n", program)
+		fmt.Fprintf(out, "eval(%s) ->\n", program)
+		result := evaluator.Eval(program)
+		if result != nil {
+			fmt.Fprintf(out, "%s\n", result.Inspect())
+		}
 	}
 	return scanner.Err()
 }
