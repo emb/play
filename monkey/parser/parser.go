@@ -32,6 +32,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.FALSE, p.bool)
 	p.registerPrefix(token.LPAREN, p.grouped)
 	p.registerPrefix(token.IF, p.ifexpr)
+	p.registerPrefix(token.FUNCTION, p.fn)
 
 	p.registerInfix(token.PLUS, p.infix)
 	p.registerInfix(token.MINUS, p.infix)
@@ -236,6 +237,22 @@ func (p *Parser) ifexpr() ast.Expression {
 	return expr
 }
 
+func (p *Parser) fn() ast.Expression {
+	expr := &ast.FunctionLiteral{
+		Token:      p.c,
+		Parameters: []*ast.Identifier{},
+	}
+	if !p.nextIfPeek(token.LPAREN) {
+		return nil
+	}
+	expr.Parameters = p.params()
+	if !p.nextIfPeek(token.LBRACE) {
+		return nil
+	}
+	expr.Body = p.block()
+	return expr
+}
+
 func (p *Parser) block() *ast.BlockStmt {
 	block := &ast.BlockStmt{Token: p.c, Statements: []ast.Statement{}}
 	p.next()
@@ -247,6 +264,28 @@ func (p *Parser) block() *ast.BlockStmt {
 		p.next()
 	}
 	return block
+}
+
+func (p *Parser) params() []*ast.Identifier {
+	idents := []*ast.Identifier{}
+	if p.peekIs(token.RPAREN) {
+		p.next()
+		return idents
+	}
+	p.next()
+	idents = append(idents, &ast.Identifier{Token: p.c, Value: p.c.Literal})
+	for p.peekIs(token.COMMA) {
+		p.next() // move to comma
+		p.next() // move to next identifier
+		idents = append(idents, &ast.Identifier{
+			Token: p.c,
+			Value: p.c.Literal,
+		})
+	}
+	if !p.nextIfPeek(token.RPAREN) {
+		return nil
+	}
+	return idents
 }
 
 // nextIfPeek checks if the next/peek token type matches t then call

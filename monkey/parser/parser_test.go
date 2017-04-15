@@ -326,6 +326,71 @@ func TestIfAlternativeExpresssion(t *testing.T) {
 	testIdent(t, alt.Expression, "y")
 }
 
+func TestFuctionLiteralExpression(t *testing.T) {
+	input := `fn(x, y) { x+y; }`
+	parse := New(lexer.New(input))
+	program := parse.Program()
+	checkErrors(t, parse)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements has %d, want 1",
+			len(program.Statements))
+
+	}
+	stmt, ok := program.Statements[0].(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("program.Statements[0] is of type %T, want *ast.ExpressionStmt",
+			program.Statements[0])
+	}
+	fn, ok := stmt.Expression.(*ast.FunctionLiteral)
+	if !ok {
+		t.Fatalf("stmt.Expression is of type %T, want *ast.FunctionLiteral",
+			stmt.Expression)
+	}
+	if len(fn.Parameters) != 2 {
+		t.Fatalf("fn has %d parameters, want 2", len(fn.Parameters))
+	}
+	testLiteralExpr(t, fn.Parameters[0], "x")
+	testLiteralExpr(t, fn.Parameters[1], "y")
+	if len(fn.Body.Statements) != 1 {
+		t.Fatalf("fn.Body has %d statements, want 1",
+			len(fn.Body.Statements))
+	}
+	body, ok := fn.Body.Statements[0].(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("body.Statement[0] is of type %T, want *ast.ExpressionStmt",
+			fn.Body.Statements[0])
+	}
+	testInfix(t, body.Expression, "x", "+", "y")
+}
+
+func TestFunctionParametersParsing(t *testing.T) {
+	tests := []struct {
+		input string
+		want  []string
+	}{
+		{input: "fn() {};", want: []string{}},
+		{input: "fn(x) {};", want: []string{"x"}},
+		{input: "fn(x,y,z) {};", want: []string{"x", "y", "z"}},
+	}
+	for i, tc := range tests {
+		t.Logf("test[%d] input %q", i, tc.input)
+		parse := New(lexer.New(tc.input))
+		program := parse.Program()
+		checkErrors(t, parse)
+
+		stmt := program.Statements[0].(*ast.ExpressionStmt)
+		fn := stmt.Expression.(*ast.FunctionLiteral)
+		if len(fn.Parameters) != len(tc.want) {
+			t.Errorf("fn has %d params, want %d",
+				len(fn.Parameters), len(tc.want))
+		}
+		for i, p := range tc.want {
+			testLiteralExpr(t, fn.Parameters[i], p)
+		}
+	}
+}
+
 func testIdent(t *testing.T, expr ast.Expression, value string) {
 	ident, ok := expr.(*ast.Identifier)
 	if !ok {

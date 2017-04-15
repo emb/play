@@ -8,6 +8,7 @@ package ast
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/emb/play/monkey/token"
 )
@@ -220,6 +221,35 @@ func (i *IfExpr) String() string {
 		buf.WriteString(" else ")
 		buf.WriteString(i.Alternative.String())
 	}
+	return buf.String()
+}
+
+// FunctionLiteral describes functions in the monkey language.
+type FunctionLiteral struct {
+	// Token holds the `fn` string
+	Token      token.Token
+	Parameters []*Identifier
+	Body       *BlockStmt
+}
+
+// TokenLiteral returns a string representing the fn token.
+func (f *FunctionLiteral) TokenLiteral() string { return f.Token.Literal }
+
+// String returns a string representing the function code
+func (f *FunctionLiteral) String() string {
+	if f == nil {
+		return ""
+	}
+	var buf bytes.Buffer
+	params := make([]string, len(f.Parameters))
+	for i, p := range f.Parameters {
+		params[i] = p.String()
+	}
+	buf.WriteString(f.TokenLiteral())
+	buf.WriteByte('(')
+	buf.WriteString(strings.Join(params, ", "))
+	buf.WriteByte(')')
+	buf.WriteString(f.Body.String())
 	return buf.String()
 }
 
