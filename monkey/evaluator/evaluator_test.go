@@ -14,7 +14,7 @@ func TestEvalIntegerExpressions(t *testing.T) {
 		want  int64
 	}{
 		{"5", 5},
-		{"7", 7},
+		{"-4", -4},
 	}
 	for _, tc := range tests {
 		evaled := testEval(tc.input)
@@ -29,8 +29,15 @@ func TestEvalBooleanExpression(t *testing.T) {
 	}{
 		{"true", true},
 		{"false", false},
+		{"!true", false},
+		{"!false", true},
+		{"!!true", true},
+		{"!!false", false},
+		{"!5", false},
+		{"!!5", true},
 	}
 	for _, tc := range tests {
+		t.Logf("test[i] input %q", tc.input)
 		testBoolObj(t, testEval(tc.input), tc.want)
 	}
 }
