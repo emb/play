@@ -20,6 +20,7 @@ const (
 	Integer Type = iota
 	Boolean
 	Null
+	Return
 )
 
 // Object is an internal representation of values in the monkey
@@ -55,3 +56,16 @@ func (*Nul) Type() Type { return Null }
 
 // Inspect provides a string representation of null value.
 func (*Nul) Inspect() string { return "null" }
+
+// Ret wraps a return value
+type Ret struct {
+	Value Object
+}
+
+// Type returns the object type
+func (*Ret) Type() Type { return Return }
+
+// Inspect provides a string representation of the return value
+func (r *Ret) Inspect() string {
+	return fmt.Sprintf("return(%s)", r.Value)
+}

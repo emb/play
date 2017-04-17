@@ -20,12 +20,20 @@ func Eval(node ast.Node) object.Object {
 	// Statements
 	case *ast.Program:
 		// The result of a program is equivalent to the result
-		// of the last statement in Monkey.
-		return evalStmts(n.Statements)
+		// of the last statement in Monkey. Furthermore,
+		// receiving a return object requires the result to be
+		// unwrapped.
+		result := evalStmts(n.Statements)
+		if ret, ok := result.(*object.Ret); ok {
+			return ret.Value
+		}
+		return result
 	case *ast.ExpressionStmt:
 		return Eval(n.Expression)
 	case *ast.BlockStmt:
 		return evalStmts(n.Statements)
+	case *ast.ReturnStmt:
+		return &object.Ret{Value: Eval(n.Value)}
 	// Expressions
 	case *ast.IntegerLiteral:
 		i := object.Int(n.Value)
@@ -74,6 +82,15 @@ func evalStmts(stmts []ast.Statement) object.Object {
 	var result object.Object
 	for _, stmt := range stmts {
 		result = Eval(stmt)
+		// Early exit during a return statement. Note the
+		// return object is not being unwrapped here because
+		// doing so will prevent nested block statements from
+		// working as expected. We bubble the return object
+		// and it becomes the root node responsibility to
+		// unwrap the result.
+		if result != nil && result.Type() == object.Return {
+			return result
+		}
 	}
 	return result
 }
