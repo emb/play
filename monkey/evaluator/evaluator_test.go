@@ -1,6 +1,7 @@
 package evaluator
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/emb/play/monkey/lexer"
@@ -29,7 +30,8 @@ func TestEvalIntegerExpressions(t *testing.T) {
 	}
 	for i, tc := range tests {
 		t.Logf("test[%d] input %q", i, tc.input)
-		testIntObj(t, testEval(tc.input), tc.want)
+		i, _ := testEval(tc.input)
+		testIntObj(t, i, tc.want)
 	}
 }
 
@@ -66,7 +68,8 @@ func TestEvalBooleanExpression(t *testing.T) {
 	}
 	for i, tc := range tests {
 		t.Logf("test[%d] input %q", i, tc.input)
-		testBoolObj(t, testEval(tc.input), tc.want)
+		b, _ := testEval(tc.input)
+		testBoolObj(t, b, tc.want)
 	}
 }
 
@@ -87,7 +90,7 @@ func TestIfElseExpression(t *testing.T) {
 	}
 	for i, tc := range tests {
 		t.Logf("test[%d] input %q", i, tc.input)
-		result := testEval(tc.input)
+		result, _ := testEval(tc.input)
 		switch w := tc.want.(type) {
 		case int:
 			testIntObj(t, result, int64(w))
@@ -122,11 +125,62 @@ if (10 > 1) {
 	}
 	for i, tc := range tests {
 		t.Logf("test[%d] input %q", i, tc.input)
-		testIntObj(t, testEval(tc.input), tc.want)
+		evaled, _ := testEval(tc.input)
+		testIntObj(t, evaled, tc.want)
 	}
 }
 
-func testEval(input string) object.Object {
+func TestErrorHandling(t *testing.T) {
+	typeErr := func(l object.Type, op string, r object.Type) error {
+		return OpTypeMismatch{left: l, op: op, right: r}
+	}
+	prefixErr := func(op string, r object.Type) error {
+		return BadPrefixOp{op: op, right: r}
+	}
+	infixErr := func(l object.Type, op string, r object.Type) error {
+		return BadInfixOp{left: l, op: op, right: r}
+	}
+	tests := []struct {
+		input string
+		err   error
+	}{
+		{"5 + true;", typeErr(object.Integer, "+", object.Boolean)},
+		{"5 + true; 5;", typeErr(object.Integer, "+", object.Boolean)},
+		{"-true;", prefixErr("-", object.Boolean)},
+		{
+			"true + false;",
+			infixErr(object.Boolean, "+", object.Boolean)},
+		{
+			"5; true + false; 4;",
+			infixErr(object.Boolean, "+", object.Boolean),
+		},
+		{
+			"if (10 > 1) { true + false; }",
+			infixErr(object.Boolean, "+", object.Boolean),
+		},
+		{
+			`if (10 > 1) {
+  if (10 > 1) {
+    return true + false;
+  }
+
+  return 1;
+}
+`,
+			infixErr(object.Boolean, "+", object.Boolean),
+		},
+	}
+	for i, tc := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			_, err := testEval(tc.input)
+			if err != tc.err {
+				t.Errorf("error is %q, want %q", err, tc.err)
+			}
+		})
+	}
+}
+
+func testEval(input string) (object.Object, error) {
 	parse := parser.New(lexer.New(input))
 	return Eval(parse.Program())
 }

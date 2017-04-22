@@ -27,8 +27,10 @@ func Start(in io.Reader, out io.Writer) error {
 			continue
 		}
 		fmt.Fprintf(out, "eval(%s) ->\n", program)
-		result := evaluator.Eval(program)
-		if result != nil {
+		result, err := evaluator.Eval(program)
+		if err != nil {
+			displayErrors(out, []error{err})
+		} else if result != nil {
 			fmt.Fprintf(out, "%s\n", result.Inspect())
 		}
 	}
