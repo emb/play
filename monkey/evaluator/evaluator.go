@@ -52,12 +52,23 @@ func (e BadInfixOp) Error() string {
 	return fmt.Sprintf("bad operation: %s %s %s", e.left, e.op, e.left)
 }
 
+// UnboundIdent is an error returned if an identifier is not
+// bound/found.
+type UnboundIdent struct {
+	ident string
+}
+
+// Error returns a string describing the unbound identifier error.
+func (e UnboundIdent) Error() string {
+	return fmt.Sprintf("unbound identifier: %s", e.ident)
+}
+
 // ErrUnexpected is an unexpected error within the evaluator it should
 // not happen
 var ErrUnexpected = errors.New("unexpected error")
 
 // Eval evaluates the Monkey AST.
-func Eval(node ast.Node) (object.Object, error) {
+func Eval(node ast.Node, env *object.Environment) (object.Object, error) {
 	switch n := node.(type) {
 	// Statements
 	case *ast.Program:
@@ -65,7 +76,7 @@ func Eval(node ast.Node) (object.Object, error) {
 		// of the last statement in Monkey. Furthermore,
 		// receiving a return object requires the result to be
 		// unwrapped.
-		result, err := evalStmts(n.Statements)
+		result, err := evalStmts(n.Statements, env)
 		if err != nil {
 			return nil, err
 		}
@@ -74,12 +85,19 @@ func Eval(node ast.Node) (object.Object, error) {
 		}
 		return result, nil
 	case *ast.ExpressionStmt:
-		return Eval(n.Expression)
+		return Eval(n.Expression, env)
 	case *ast.BlockStmt:
-		return evalStmts(n.Statements)
+		return evalStmts(n.Statements, env)
 	case *ast.ReturnStmt:
-		v, err := Eval(n.Value)
+		v, err := Eval(n.Value, env)
 		return &object.Ret{Value: v}, err
+	case *ast.LetStmt:
+		result, err := Eval(n.Value, env)
+		if err != nil {
+			return nil, err
+		}
+		env.Set(n.Name.Value, result)
+		return nil, nil
 	// Expressions
 	case *ast.IntegerLiteral:
 		i := object.Int(n.Value)
@@ -87,7 +105,7 @@ func Eval(node ast.Node) (object.Object, error) {
 	case *ast.Boolean:
 		return objb(n.Value), nil
 	case *ast.PrefixExpr:
-		r, err := Eval(n.Right)
+		r, err := Eval(n.Right, env)
 		if err != nil {
 			return nil, err
 		}
@@ -101,27 +119,33 @@ func Eval(node ast.Node) (object.Object, error) {
 			return nil, BadPrefixOp{op: n.Operator, right: r.Type()}
 		}
 	case *ast.InfixExpr:
-		l, err := Eval(n.Left)
+		l, err := Eval(n.Left, env)
 		if err != nil {
 			return nil, err
 		}
-		r, err := Eval(n.Right)
+		r, err := Eval(n.Right, env)
 		if err != nil {
 			return nil, err
 		}
 		return evalInfix(n.Operator, l, r)
 	case *ast.IfExpr:
-		condition, err := Eval(n.Condition)
+		condition, err := Eval(n.Condition, env)
 		if err != nil {
 			return nil, err
 		}
 		if truthy(condition) {
-			return Eval(n.Consequence)
+			return Eval(n.Consequence, env)
 		} else if n.Alternative != nil {
-			return Eval(n.Alternative)
+			return Eval(n.Alternative, env)
 		} else {
 			return &null, nil
 		}
+	case *ast.Identifier:
+		v, ok := env.Get(n.Value)
+		if !ok {
+			return nil, UnboundIdent{ident: n.Value}
+		}
+		return v, nil
 	}
 	return nil, ErrUnexpected
 }
@@ -140,13 +164,13 @@ func obji(i int64) *object.Int {
 
 // evalStmts evaluate each statement and returns the result of the
 // last one.
-func evalStmts(stmts []ast.Statement) (object.Object, error) {
+func evalStmts(stmts []ast.Statement, env *object.Environment) (object.Object, error) {
 	var (
 		result object.Object
 		err    error
 	)
 	for _, stmt := range stmts {
-		result, err = Eval(stmt)
+		result, err = Eval(stmt, env)
 		if err != nil {
 			return nil, err
 		}

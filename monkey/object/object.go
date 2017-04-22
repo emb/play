@@ -69,3 +69,31 @@ func (*Ret) Type() Type { return Return }
 func (r *Ret) Inspect() string {
 	return fmt.Sprintf("return(%s)", r.Value)
 }
+
+// NewEnvironment creates an environment used while evaluating Monkey
+// program.
+func NewEnvironment() *Environment {
+	return &Environment{store: make(map[string]Object)}
+}
+
+// Environment is where let statement binds values to identifiers
+type Environment struct {
+	store map[string]Object
+}
+
+// Get returns an object bound to an identifier i in an environment
+func (e *Environment) Get(i string) (Object, bool) {
+	if e == nil {
+		return nil, false
+	}
+	v, ok := e.store[i]
+	return v, ok
+}
+
+// Set stores a value v bound to identifier i in an environment
+func (e *Environment) Set(i string, v Object) {
+	if e == nil {
+		return
+	}
+	e.store[i] = v
+}

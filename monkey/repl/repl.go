@@ -8,6 +8,7 @@ import (
 
 	"github.com/emb/play/monkey/evaluator"
 	"github.com/emb/play/monkey/lexer"
+	"github.com/emb/play/monkey/object"
 	"github.com/emb/play/monkey/parser"
 )
 
@@ -18,18 +19,19 @@ func prompt(w io.Writer) {
 // Start starts the Read, Eval, Print, Loop.
 func Start(in io.Reader, out io.Writer) error {
 	scanner := bufio.NewScanner(in)
+	env := object.NewEnvironment()
 	for prompt(out); scanner.Scan(); prompt(out) {
 		line := scanner.Text()
 		parse := parser.New(lexer.New(line))
 		program := parse.Program()
 		if errs := parse.Errors(); len(errs) != 0 {
-			displayErrors(out, errs)
+			parserErrors(out, errs)
 			continue
 		}
 		fmt.Fprintf(out, "eval(%s) ->\n", program)
-		result, err := evaluator.Eval(program)
+		result, err := evaluator.Eval(program, env)
 		if err != nil {
-			displayErrors(out, []error{err})
+			evalError(out, err)
 		} else if result != nil {
 			fmt.Fprintf(out, "%s\n", result.Inspect())
 		}
@@ -50,11 +52,17 @@ const monkey = `            __,__
            '-----'
 `
 
-func displayErrors(out io.Writer, errs []error) {
+func parserErrors(out io.Writer, errs []error) {
 	io.WriteString(out, monkey)
 	fmt.Fprint(out, "Woops! We ran into some monkey business here!\n")
 	fmt.Fprint(out, "   parser errors:\n")
 	for _, err := range errs {
 		fmt.Fprintf(out, "\t* %s\n", err)
 	}
+}
+
+func evalError(out io.Writer, err error) {
+	io.WriteString(out, monkey)
+	fmt.Fprint(out, "Woops! We ran into some monkey business here!\n")
+	fmt.Fprintf(out, "   eval error: %s\n", err)
 }

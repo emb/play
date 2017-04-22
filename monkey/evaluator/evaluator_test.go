@@ -169,6 +169,7 @@ func TestErrorHandling(t *testing.T) {
 `,
 			infixErr(object.Boolean, "+", object.Boolean),
 		},
+		{"foobar", UnboundIdent{ident: "foobar"}},
 	}
 	for i, tc := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
@@ -180,9 +181,27 @@ func TestErrorHandling(t *testing.T) {
 	}
 }
 
+func TestLetStatement(t *testing.T) {
+	tests := []struct {
+		input string
+		want  int64
+	}{
+		{"let a = 3; a;", 3},
+		{"let b = 3 * 5; b;", 15},
+		{"let c = 7; let d = c; d;", 7},
+		{"let a = 3; let b = 4; let c = a + b + 5; c;", 12},
+	}
+	for i, tc := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			r, _ := testEval(tc.input)
+			testIntObj(t, r, tc.want)
+		})
+	}
+}
+
 func testEval(input string) (object.Object, error) {
 	parse := parser.New(lexer.New(input))
-	return Eval(parse.Program())
+	return Eval(parse.Program(), object.NewEnvironment())
 }
 
 func testIntObj(t *testing.T, obj object.Object, want int64) {
