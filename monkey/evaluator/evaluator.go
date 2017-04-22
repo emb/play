@@ -63,6 +63,17 @@ func (e UnboundIdent) Error() string {
 	return fmt.Sprintf("unbound identifier: %s", e.ident)
 }
 
+// BadFn is an error that happens when trying to evaluate a call
+// expression on a non function object.
+type BadFn struct {
+	exp object.Type
+}
+
+// Error returns a string describing the error
+func (b BadFn) Error() string {
+	return fmt.Sprintf("bad fn call, %T is not a function", b.exp)
+}
+
 // ErrUnexpected is an unexpected error within the evaluator it should
 // not happen
 var ErrUnexpected = errors.New("unexpected error")
@@ -80,10 +91,7 @@ func Eval(node ast.Node, env *object.Environment) (object.Object, error) {
 		if err != nil {
 			return nil, err
 		}
-		if ret, ok := result.(*object.Ret); ok {
-			return ret.Value, nil
-		}
-		return result, nil
+		return unwrap(result), nil
 	case *ast.ExpressionStmt:
 		return Eval(n.Expression, env)
 	case *ast.BlockStmt:
@@ -146,7 +154,24 @@ func Eval(node ast.Node, env *object.Environment) (object.Object, error) {
 			return nil, UnboundIdent{ident: n.Value}
 		}
 		return v, nil
+	case *ast.FunctionLiteral:
+		return &object.Funct{
+			Env:        env,
+			Parameters: n.Parameters,
+			Body:       n.Body,
+		}, nil
+	case *ast.CallExpr:
+		fn, err := Eval(n.Function, env)
+		if err != nil {
+			return nil, err
+		}
+		args, err := evalExprs(n.Arguments, env)
+		if err != nil {
+			return nil, err
+		}
+		return apply(fn, args)
 	}
+
 	return nil, ErrUnexpected
 }
 
@@ -276,4 +301,49 @@ func truthy(obj object.Object) bool {
 	default:
 		return true
 	}
+}
+
+func evalExprs(exps []ast.Expression, env *object.Environment) ([]object.Object, error) {
+	result := make([]object.Object, len(exps))
+	for i, exp := range exps {
+		r, err := Eval(exp, env)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = r
+	}
+	return result, nil
+}
+
+func apply(fn object.Object, args []object.Object) (object.Object, error) {
+	funct, ok := fn.(*object.Funct)
+	if !ok {
+		return nil, BadFn{exp: fn.Type()}
+	}
+	result, err := Eval(funct.Body, makeFnEnv(funct, args))
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func makeFnEnv(fn *object.Funct, args []object.Object) *object.Environment {
+	env := object.NewEnvironment().Extend(fn.Env)
+	for i, p := range fn.Parameters {
+		// NOTE: assuming parameter evaluation order. Args are
+		// the result of evaluating the arguments of a
+		// function call, the order of the parameters and
+		// their results should match.
+		env.Set(p.Value, args[i])
+	}
+	return env
+}
+
+// nnwrap a return value if o is a object.ReturnValue
+func unwrap(o object.Object) object.Object {
+	if ret, ok := o.(*object.Ret); ok {
+		return ret.Value
+	}
+	return o
+
 }

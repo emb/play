@@ -7,8 +7,12 @@
 package object
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
+	"strings"
+
+	"github.com/emb/play/monkey/ast"
 )
 
 // Type describes the type of object being manipulated.
@@ -21,6 +25,7 @@ const (
 	Boolean
 	Null
 	Return
+	Function
 )
 
 // Object is an internal representation of values in the monkey
@@ -79,6 +84,13 @@ func NewEnvironment() *Environment {
 // Environment is where let statement binds values to identifiers
 type Environment struct {
 	store map[string]Object
+	outer *Environment
+}
+
+// Extend extends the current environment with an outer scoped environment.
+func (e *Environment) Extend(o *Environment) *Environment {
+	e.outer = o
+	return e
 }
 
 // Get returns an object bound to an identifier i in an environment
@@ -87,13 +99,37 @@ func (e *Environment) Get(i string) (Object, bool) {
 		return nil, false
 	}
 	v, ok := e.store[i]
+	if !ok {
+		return e.outer.Get(i)
+	}
 	return v, ok
 }
 
 // Set stores a value v bound to identifier i in an environment
 func (e *Environment) Set(i string, v Object) {
-	if e == nil {
-		return
-	}
 	e.store[i] = v
+}
+
+// Funct is an object that describes a function that can be evaluated.
+type Funct struct {
+	Env        *Environment
+	Parameters []*ast.Identifier
+	Body       *ast.BlockStmt
+}
+
+// Type returns the object type
+func (*Funct) Type() Type { return Function }
+
+// Inspect provides a string representation of a function
+func (f *Funct) Inspect() string {
+	var buf bytes.Buffer
+	params := make([]string, len(f.Parameters))
+	for i, p := range f.Parameters {
+		params[i] = p.String()
+	}
+	buf.WriteString("fn (")
+	buf.WriteString(strings.Join(params, ", "))
+	buf.WriteByte(')')
+	buf.WriteString(f.Body.String())
+	return buf.String()
 }

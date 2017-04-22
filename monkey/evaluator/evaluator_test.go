@@ -199,6 +199,62 @@ func TestLetStatement(t *testing.T) {
 	}
 }
 
+func TestFunctObject(t *testing.T) {
+	input := "fn(x) { x +2; }"
+	result, err := testEval(input)
+	if err != nil {
+		t.Fatalf("eval failed: %s", err)
+	}
+
+	fn, ok := result.(*object.Funct)
+	if !ok {
+		t.Fatalf("fn is of type %T, want *object.Funct", fn)
+	}
+	if len(fn.Parameters) != 1 {
+		t.Errorf("fn has %d parameter, want 1", len(fn.Parameters))
+	}
+	if fn.Parameters[0].String() != "x" {
+		t.Errorf("first parameter is %s, want x", fn.Parameters[0])
+	}
+	wantBody := "{(x + 2)}"
+	if fn.Body.String() != wantBody {
+		t.Errorf("fn.Body is %q, want %q", fn.Body, wantBody)
+	}
+}
+
+func TestFunctionApplication(t *testing.T) {
+	tests := []struct {
+		input string
+		want  int64
+	}{
+		{"let identity = fn(x) { x; }; identity(4);", 4},
+		{"let identity = fn(x) { return x;}; identity(3);", 3},
+		{"let double = fn(x) { x * 2; }; double(7);", 14},
+		{"let add = fn(a, b) { a + b; }; add(3, 4);", 7},
+		{"let add = fn(a, b) { a + b; }; add(3 + 3, add(4, 4));", 14},
+		{"fn(x) { x ;}(2)", 2},
+	}
+	for i, tc := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			result, _ := testEval(tc.input)
+			testIntObj(t, result, tc.want)
+		})
+	}
+}
+
+func TestClosures(t *testing.T) {
+	input := `
+let newAdder = fn(x) {
+  fn(y) { x + y }
+};
+
+let addTwo = newAdder(2);
+addTwo(3);
+`
+	r, _ := testEval(input)
+	testIntObj(t, r, 5)
+}
+
 func testEval(input string) (object.Object, error) {
 	parse := parser.New(lexer.New(input))
 	return Eval(parse.Program(), object.NewEnvironment())

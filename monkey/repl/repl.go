@@ -28,7 +28,7 @@ func Start(in io.Reader, out io.Writer) error {
 			parserErrors(out, errs)
 			continue
 		}
-		fmt.Fprintf(out, "eval(%s) ->\n", program)
+		fmt.Fprintf(out, "\r%s -> eval(%s)\n", line, program)
 		result, err := evaluator.Eval(program, env)
 		if err != nil {
 			evalError(out, err)
