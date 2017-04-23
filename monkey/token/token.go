@@ -19,8 +19,9 @@ const (
 
 // Identifiers and literals
 const (
-	IDENT = "IDENT"
-	INT   = "INT"
+	IDENT  = "IDENT"
+	INT    = "INT"
+	STRING = "STRING"
 )
 
 // Operations

@@ -110,6 +110,9 @@ func Eval(node ast.Node, env *object.Environment) (object.Object, error) {
 	case *ast.IntegerLiteral:
 		i := object.Int(n.Value)
 		return &i, nil
+	case *ast.StringLiteral:
+		s := object.Str(n.Value)
+		return &s, nil
 	case *ast.Boolean:
 		return objb(n.Value), nil
 	case *ast.PrefixExpr:

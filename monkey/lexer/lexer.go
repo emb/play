@@ -73,6 +73,17 @@ func (l *Lexer) number() string {
 	return l.input[pos:l.position]
 }
 
+func (l *Lexer) string() string {
+	pos := l.position + 1
+	for {
+		l.readChar()
+		if l.ch == '"' || l.ch == 0 {
+			break
+		}
+	}
+	return l.input[pos:l.position]
+}
+
 // NextToken returns a next token every time it is called on a given
 // input. When tokens run out token.EOF is returned.
 func (l *Lexer) NextToken() token.Token {
@@ -128,14 +139,23 @@ func (l *Lexer) NextToken() token.Token {
 		tok = new(token.LBRACE, l.ch)
 	case '}':
 		tok = new(token.RBRACE, l.ch)
+	case '"':
+		tok.Type = token.STRING
+		tok.Literal = l.string()
 	case 0:
 		tok.Type = token.EOF
 	default:
 		if isLetter(l.ch) {
 			i := l.ident()
-			return token.Token{token.LookupIdent(i), i}
+			return token.Token{
+				Type:    token.LookupIdent(i),
+				Literal: i,
+			}
 		} else if isDigit(l.ch) {
-			return token.Token{token.INT, l.number()}
+			return token.Token{
+				Type:    token.INT,
+				Literal: l.number(),
+			}
 		}
 		tok = new(token.ILLEGAL, l.ch)
 	}

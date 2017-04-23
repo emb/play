@@ -22,6 +22,7 @@ type Type int
 // Enumerate different object types
 const (
 	Integer Type = iota
+	String
 	Boolean
 	Null
 	Return
@@ -43,6 +44,16 @@ func (i *Int) Type() Type { return Integer }
 
 // Inspect provides a string representation of an Int value.
 func (i *Int) Inspect() string { return strconv.FormatInt(int64(*i), 10) }
+
+// Str represents a string value within monkey
+type Str string
+
+// Type returns the object type
+func (s *Str) Type() Type { return String }
+
+// Inspect provides a string representation of of the underlying
+// string literal.
+func (s *Str) Inspect() string { return string(*s) }
 
 // Bool represents a boolean value
 type Bool bool

@@ -26,6 +26,8 @@ if (5 < 10) {
 
 10 == 10;
 9 != 10;
+"foobar";
+"foo bar";
 `
 	tests := []struct {
 		wantType    token.Type
@@ -103,6 +105,10 @@ if (5 < 10) {
 		{token.INT, "9"},
 		{token.NEQ, "!="},
 		{token.INT, "10"},
+		{token.SEMICOLON, ";"},
+		{token.STRING, "foobar"},
+		{token.SEMICOLON, ";"},
+		{token.STRING, "foo bar"},
 		{token.SEMICOLON, ";"},
 		{token.EOF, ""},
 	}

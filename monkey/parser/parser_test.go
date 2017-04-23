@@ -97,6 +97,23 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	testIntegerLiteral(t, stmt.Expression, 7)
 }
 
+func TestStringLiteralExpression(t *testing.T) {
+	input := `"hello string!";`
+	parse := New(lexer.New(input))
+	program := parse.Program()
+	checkErrors(t, parse)
+
+	stmt := firstExpression(t, program)
+	str, ok := stmt.Expression.(*ast.StringLiteral)
+	if !ok {
+		t.Fatalf("stmt.Expression is of type %T, want *ast.StringLiteral",
+			stmt.Expression)
+	}
+	if str.Value != "hello string!" {
+		t.Errorf(`str.Value is %q, want "hello string!"`, str.Value)
+	}
+}
+
 func TestParsingPrefixExpressions(t *testing.T) {
 	tests := []struct {
 		input  string

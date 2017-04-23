@@ -143,6 +143,18 @@ func (i *IntegerLiteral) TokenLiteral() string { return i.Token.Literal }
 // String returns a string representation of IntegerLiteral
 func (i *IntegerLiteral) String() string { return i.Token.Literal }
 
+// StringLiteral describes a string in the Monkey languae
+type StringLiteral struct {
+	Token token.Token
+	Value string
+}
+
+// TokenLiteral returns the literal string value
+func (s *StringLiteral) TokenLiteral() string { return s.Token.Literal }
+
+// String returns a string representation of StringLiteral
+func (s *StringLiteral) String() string { return s.Token.Literal }
+
 // PrefixExpr describes a prefix expressions of form -5.
 type PrefixExpr struct {
 	// Token describes the prefix token; ! or -

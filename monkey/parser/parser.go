@@ -26,6 +26,7 @@ func New(l *lexer.Lexer) *Parser {
 	// Register expression parsing functions.
 	p.registerPrefix(token.IDENT, p.ident)
 	p.registerPrefix(token.INT, p.int)
+	p.registerPrefix(token.STRING, p.str)
 	p.registerPrefix(token.BANG, p.prefix)
 	p.registerPrefix(token.MINUS, p.prefix)
 	p.registerPrefix(token.TRUE, p.bool)
@@ -178,6 +179,10 @@ func (p *Parser) int() ast.Expression {
 		return nil
 	}
 	return &ast.IntegerLiteral{Token: p.c, Value: i}
+}
+
+func (p *Parser) str() ast.Expression {
+	return &ast.StringLiteral{Token: p.c, Value: p.c.Literal}
 }
 
 func (p *Parser) prefix() ast.Expression {

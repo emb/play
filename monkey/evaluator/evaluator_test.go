@@ -255,6 +255,18 @@ addTwo(3);
 	testIntObj(t, r, 5)
 }
 
+func TestStringLiteral(t *testing.T) {
+	input := `"Hello String!"`
+	result, _ := testEval(input)
+	str, ok := result.(*object.Str)
+	if !ok {
+		t.Fatalf("result is of type %T, want *object.Str", result)
+	}
+	if string(*str) != "Hello String!" {
+		t.Errorf(`str has %q, want "Hello String!"`, str)
+	}
+}
+
 func testEval(input string) (object.Object, error) {
 	parse := parser.New(lexer.New(input))
 	return Eval(parse.Program(), object.NewEnvironment())
