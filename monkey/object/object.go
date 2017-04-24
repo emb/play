@@ -53,7 +53,7 @@ func (s *Str) Type() Type { return String }
 
 // Inspect provides a string representation of of the underlying
 // string literal.
-func (s *Str) Inspect() string { return string(*s) }
+func (s *Str) Inspect() string { return fmt.Sprintf("%q", *s) }
 
 // Bool represents a boolean value
 type Bool bool
