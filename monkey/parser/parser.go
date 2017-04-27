@@ -34,6 +34,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.LPAREN, p.grouped)
 	p.registerPrefix(token.IF, p.ifexpr)
 	p.registerPrefix(token.FUNCTION, p.fn)
+	p.registerPrefix(token.LBRACKET, p.array)
 
 	p.registerInfix(token.PLUS, p.infix)
 	p.registerInfix(token.MINUS, p.infix)
@@ -44,6 +45,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.GT, p.infix)
 	p.registerInfix(token.LT, p.infix)
 	p.registerInfix(token.LPAREN, p.call)
+	p.registerInfix(token.LBRACKET, p.index)
 
 	return p
 }
@@ -299,13 +301,13 @@ func (p *Parser) call(callable ast.Expression) ast.Expression {
 	return &ast.CallExpr{
 		Token:     p.c,
 		Function:  callable,
-		Arguments: p.args(),
+		Arguments: p.listExprs(token.RPAREN),
 	}
 }
 
-func (p *Parser) args() []ast.Expression {
+func (p *Parser) listExprs(end token.Type) []ast.Expression {
 	args := []ast.Expression{}
-	if p.peekIs(token.RPAREN) { // Empty arguments
+	if p.peekIs(end) { // Empty arguments
 		p.next()
 		return args
 	}
@@ -316,10 +318,27 @@ func (p *Parser) args() []ast.Expression {
 		p.next() // prepare to parse next expression
 		args = append(args, p.expr(Lowest))
 	}
-	if !p.nextIfPeek(token.RPAREN) {
+	if !p.nextIfPeek(end) {
 		return nil
 	}
 	return args
+}
+
+func (p *Parser) array() ast.Expression {
+	return &ast.ArrayLiteral{
+		Token:    p.c,
+		Elements: p.listExprs(token.RBRACKET),
+	}
+}
+
+func (p *Parser) index(left ast.Expression) ast.Expression {
+	exp := &ast.IndexExpr{Token: p.c, Left: left}
+	p.next()
+	exp.Index = p.expr(Lowest)
+	if !p.nextIfPeek(token.RBRACKET) {
+		return nil
+	}
+	return exp
 }
 
 // nextIfPeek checks if the next/peek token type matches t then call
@@ -377,6 +396,7 @@ const (
 	Product                // *
 	Prefix                 // -X or !X
 	Call                   // myFunction(x)
+	Index
 )
 
 var precedences = map[token.Type]precedence{
@@ -389,4 +409,5 @@ var precedences = map[token.Type]precedence{
 	token.SLASH:    Product,
 	token.ASTERISK: Product,
 	token.LPAREN:   Call,
+	token.LBRACKET: Index,
 }

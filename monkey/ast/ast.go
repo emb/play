@@ -155,6 +155,48 @@ func (s *StringLiteral) TokenLiteral() string { return s.Token.Literal }
 // String returns a string representation of StringLiteral
 func (s *StringLiteral) String() string { return s.Token.Literal }
 
+// ArrayLiteral describes an array within the language
+type ArrayLiteral struct {
+	// Token stores `[` token
+	Token    token.Token
+	Elements []Expression
+}
+
+// TokenLiteral return the literal toke `[`
+func (a *ArrayLiteral) TokenLiteral() string { return a.Token.Literal }
+
+// String returns a string representation of an array
+func (a *ArrayLiteral) String() string {
+	if a == nil {
+		return ""
+	}
+	var buf bytes.Buffer
+	es := make([]string, len(a.Elements))
+	for i, e := range a.Elements {
+		es[i] = e.String()
+	}
+	buf.WriteByte('[')
+	buf.WriteString(strings.Join(es, ", "))
+	buf.WriteByte(']')
+	return buf.String()
+}
+
+// IndexExpr describes an expression of the form myarray[1]
+type IndexExpr struct {
+	// Token is the `[`
+	Token token.Token
+	Left  Expression
+	Index Expression
+}
+
+// TokenLiteral return the literal token `[`
+func (i *IndexExpr) TokenLiteral() string { return i.Token.Literal }
+
+// String returns a string representation of an index expression
+func (i *IndexExpr) String() string {
+	return fmt.Sprintf("(%s[%s])", i.Left, i.Index)
+}
+
 // PrefixExpr describes a prefix expressions of form -5.
 type PrefixExpr struct {
 	// Token describes the prefix token; ! or -

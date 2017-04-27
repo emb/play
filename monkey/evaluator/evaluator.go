@@ -165,6 +165,12 @@ func Eval(node ast.Node, env *object.Environment) (object.Object, error) {
 		return &s, nil
 	case *ast.Boolean:
 		return objb(n.Value), nil
+	case *ast.ArrayLiteral:
+		result, err := evalExprs(n.Elements, env)
+		if err != nil {
+			return nil, err
+		}
+		return object.Arr(result), nil
 	case *ast.PrefixExpr:
 		r, err := Eval(n.Right, env)
 		if err != nil {
@@ -225,6 +231,16 @@ func Eval(node ast.Node, env *object.Environment) (object.Object, error) {
 			return nil, err
 		}
 		return apply(fn, args)
+	case *ast.IndexExpr:
+		left, err := Eval(n.Left, env)
+		if err != nil {
+			return nil, err
+		}
+		index, err := Eval(n.Index, env)
+		if err != nil {
+			return nil, err
+		}
+		return evalIndex(left, index)
 	}
 
 	return nil, ErrUnexpected
@@ -380,6 +396,20 @@ func evalExprs(exps []ast.Expression, env *object.Environment) ([]object.Object,
 		result[i] = r
 	}
 	return result, nil
+}
+
+func evalIndex(left, index object.Object) (object.Object, error) {
+	if left.Type() != object.Array && index.Type() != object.Integer {
+		return nil, fmt.Errorf("bad index operator on type %s",
+			left.Type())
+	}
+	arr := left.(object.Arr)
+	i := int64(*index.(*object.Int))
+	max := int64(len(arr) - 1)
+	if i < 0 || i > max {
+		return &null, nil
+	}
+	return arr[i], nil
 }
 
 func apply(fn object.Object, args []object.Object) (object.Object, error) {

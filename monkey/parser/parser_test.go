@@ -219,18 +219,28 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 			"add(a + b + c * d / f + g)",
 			"add((((a + b) + ((c * d) / f)) + g))",
 		},
+		{
+			"a * [1, 2, 3, 4][b * c] * d",
+			"((a * ([1, 2, 3, 4][(b * c)])) * d)",
+		},
+		{
+			"add(a * b[2], b[1], 2 * [1, 2][1])",
+			"add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
+		},
 	}
 
 	for i, tc := range tests {
-		t.Logf("test[i] input %q", tc.input)
-		parse := New(lexer.New(tc.input))
-		program := parse.Program()
-		checkErrors(t, parse)
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			parse := New(lexer.New(tc.input))
+			program := parse.Program()
+			checkErrors(t, parse)
 
-		if program.String() != tc.want {
-			t.Errorf("test[%d] parse.Program() returns %q, want %q",
-				i, program, tc.want)
-		}
+			if program.String() != tc.want {
+				t.Errorf("test[%d] parse.Program() returns %q, want %q",
+					i, program, tc.want)
+			}
+
+		})
 	}
 }
 
@@ -382,6 +392,42 @@ func TestCallExpression(t *testing.T) {
 	testLiteralExpr(t, call.Arguments[0], 1)
 	testInfix(t, call.Arguments[1], 2, "*", 3)
 	testInfix(t, call.Arguments[2], 4, "+", 5)
+}
+
+func TestArrayLiteralExpressions(t *testing.T) {
+	input := "[1, 2 * 3, 3 + 3]"
+	parse := New(lexer.New(input))
+	program := parse.Program()
+	checkErrors(t, parse)
+
+	stmt := firstExpression(t, program)
+	array, ok := stmt.Expression.(*ast.ArrayLiteral)
+	if !ok {
+		t.Fatalf("stmt.Expression is of type %T, want *ast.ArrayLiteral",
+			stmt.Expression)
+	}
+	if len(array.Elements) != 3 {
+		t.Fatalf("len(array) is %d, want 3", len(array.Elements))
+	}
+	testIntegerLiteral(t, array.Elements[0], 1)
+	testInfix(t, array.Elements[1], 2, "*", 3)
+	testInfix(t, array.Elements[2], 3, "+", 3)
+}
+
+func TestIndexEpression(t *testing.T) {
+	input := "mylist[3+3]"
+	parse := New(lexer.New(input))
+	program := parse.Program()
+	checkErrors(t, parse)
+
+	stmt := firstExpression(t, program)
+	iexp, ok := stmt.Expression.(*ast.IndexExpr)
+	if !ok {
+		t.Fatalf("stmt.Expression is of type %T, want *ast.IndexExpr",
+			stmt.Expression)
+	}
+	testIdent(t, iexp.Left, "mylist")
+	testInfix(t, iexp.Index, 3, "+", 3)
 }
 
 func ensureStatements(t *testing.T, program *ast.Program, n int) {

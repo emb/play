@@ -313,6 +313,55 @@ func TestBuiltinFunctions(t *testing.T) {
 	}
 }
 
+func TestArrayLiterals(t *testing.T) {
+	input := "[1, 2 * 2, 3 + 3]"
+	result, _ := testEval(input)
+	arr, ok := result.(object.Arr)
+	if !ok {
+		t.Fatalf("result is of type %T, want object.Arr", result)
+	}
+	if len(arr) != 3 {
+		t.Fatalf("array has %d elements, want 3", len(arr))
+	}
+	testIntObj(t, arr[0], 1)
+	testIntObj(t, arr[1], 4)
+	testIntObj(t, arr[2], 6)
+}
+
+func TestArrayIndexExpr(t *testing.T) {
+	tests := []struct {
+		input string
+		want  interface{}
+	}{
+		{"[1,2,3][-1]", nil},
+		{"[1,2,3][0]", 1},
+		{"[1,2,3][1]", 2},
+		{"[1,2,3][2]", 3},
+		{"[1,2,3][3]", nil},
+		{"[1, 2, 3][1 + 1];", 3},
+		{"let i = 0; [1][i];", 1},
+		{"let myArray = [1, 2, 3]; myArray[2];", 3},
+		{
+			"let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];",
+			6,
+		},
+		{
+			"let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]",
+			2,
+		},
+	}
+	for i, tc := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			result, _ := testEval(tc.input)
+			if i, ok := tc.want.(int); ok {
+				testIntObj(t, result, int64(i))
+				return
+			}
+			testIsNull(t, result)
+		})
+	}
+}
+
 func testEval(input string) (object.Object, error) {
 	parse := parser.New(lexer.New(input))
 	return Eval(parse.Program(), object.NewEnvironment())

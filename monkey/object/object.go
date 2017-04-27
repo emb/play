@@ -24,6 +24,7 @@ const (
 	Integer Type = iota
 	String
 	Boolean
+	Array
 	Null
 	Return
 	Function
@@ -64,6 +65,25 @@ func (*Bool) Type() Type { return Boolean }
 
 // Inspect provides a string representation of boolean value.
 func (b *Bool) Inspect() string { return fmt.Sprintf("%t", *b) }
+
+// Arr represents an array within monkey
+type Arr []Object
+
+// Type returns the object type
+func (Arr) Type() Type { return Array }
+
+// Inspect provides a string representation of an array.
+func (a Arr) Inspect() string {
+	var buf bytes.Buffer
+	es := make([]string, len(a))
+	for i, e := range a {
+		es[i] = e.Inspect()
+	}
+	buf.WriteByte('[')
+	buf.WriteString(strings.Join(es, ", "))
+	buf.WriteByte(']')
+	return buf.String()
+}
 
 // Nul represents an absence of a value
 type Nul struct{}
