@@ -115,15 +115,110 @@ var builtins = map[string]*object.BuiltinFunct{
 					got:   len(args),
 				}
 			}
-			str, ok := args[0].(*object.Str)
-			if !ok {
+			switch arg := args[0].(type) {
+			case *object.Str:
+				result := object.Int(len(*arg))
+				return &result, nil
+			case object.Arr:
+				result := object.Int(len(arg))
+				return &result, nil
+			default:
 				return nil, BadBuiltinArg{
 					name:    "len",
 					argtype: args[0].Type(),
 				}
 			}
-			result := object.Int(len(*str))
-			return &result, nil
+
+		},
+	},
+	"first": &object.BuiltinFunct{
+		Fn: func(args ...object.Object) (object.Object, error) {
+			if len(args) != 1 {
+				return nil, BadBuiltinNArgs{
+					name:  "first",
+					nargs: 1,
+					got:   len(args),
+				}
+			}
+			arr, ok := args[0].(object.Arr)
+			if !ok {
+				return nil, BadBuiltinArg{
+					name:    "first",
+					argtype: args[0].Type(),
+				}
+			}
+			if len(arr) > 0 {
+				return arr[0], nil
+			}
+			return &null, nil
+		},
+	},
+	"last": &object.BuiltinFunct{
+		Fn: func(args ...object.Object) (object.Object, error) {
+			if len(args) != 1 {
+				return nil, BadBuiltinNArgs{
+					name:  "last",
+					nargs: 1,
+					got:   len(args),
+				}
+			}
+			arr, ok := args[0].(object.Arr)
+			if !ok {
+				return nil, BadBuiltinArg{
+					name:    "last",
+					argtype: args[0].Type(),
+				}
+			}
+			if len(arr) > 0 {
+				return arr[len(arr)-1], nil
+			}
+			return &null, nil
+		},
+	},
+	"rest": &object.BuiltinFunct{
+		Fn: func(args ...object.Object) (object.Object, error) {
+			if len(args) != 1 {
+				return nil, BadBuiltinNArgs{
+					name:  "rest",
+					nargs: 1,
+					got:   len(args),
+				}
+			}
+			arr, ok := args[0].(object.Arr)
+			if !ok {
+				return nil, BadBuiltinArg{
+					name:    "rest",
+					argtype: args[0].Type(),
+				}
+			}
+			if len(arr) > 0 {
+				ret := make([]object.Object, len(arr)-1)
+				copy(ret, arr[1:])
+				return object.Arr(ret), nil
+			}
+			return &null, nil
+		},
+	},
+	"push": &object.BuiltinFunct{
+		Fn: func(args ...object.Object) (object.Object, error) {
+			if len(args) != 2 {
+				return nil, BadBuiltinNArgs{
+					name:  "push",
+					nargs: 2,
+					got:   len(args),
+				}
+			}
+			arr, ok := args[0].(object.Arr)
+			if !ok {
+				return nil, BadBuiltinArg{
+					name:    "push",
+					argtype: args[0].Type(),
+				}
+			}
+			ret := make([]object.Object, len(arr)+1)
+			copy(ret, arr)
+			ret[len(arr)] = args[1]
+			return object.Arr(ret), nil
 		},
 	},
 }

@@ -294,6 +294,37 @@ func TestBuiltinFunctions(t *testing.T) {
 			`len("one", "two")`,
 			BadBuiltinNArgs{name: "len", nargs: 1, got: 2},
 		},
+		{"len([])", 0},
+		{"len([1, 2])", 2},
+		{"first([8,7,6])", 8},
+		{
+			"first(4)",
+			BadBuiltinArg{name: "first", argtype: object.Integer},
+		},
+		{
+			"first([1,2], [3,4])",
+			BadBuiltinNArgs{name: "first", nargs: 1, got: 2},
+		},
+		{"last([8,7,6])", 6},
+		{
+			"last(4)",
+			BadBuiltinArg{name: "last", argtype: object.Integer},
+		},
+		{
+			"last([1,2], [3,4])",
+			BadBuiltinNArgs{name: "last", nargs: 1, got: 2},
+		},
+		{"rest([1,2,3,4])", []int{2, 3, 4}},
+		{"push([], 1)", []int{1}},
+		{"push([8,7,6], 5)", []int{8, 7, 6, 5}},
+		{
+			"push(4, 4)",
+			BadBuiltinArg{name: "push", argtype: object.Integer},
+		},
+		{
+			"push([1,2])",
+			BadBuiltinNArgs{name: "push", nargs: 2, got: 1},
+		},
 	}
 	for i, tc := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
@@ -301,6 +332,20 @@ func TestBuiltinFunctions(t *testing.T) {
 			switch want := tc.want.(type) {
 			case int:
 				testIntObj(t, result, int64(want))
+			case []int:
+				arr, ok := result.(object.Arr)
+				if !ok {
+					t.Errorf("result is of type %T, want object.Arr",
+						result)
+					return
+				}
+				if len(arr) != len(want) {
+					t.Errorf("unexpected len %d, want %d",
+						len(arr), len(want))
+				}
+				for i, v := range want {
+					testIntObj(t, arr[i], int64(v))
+				}
 			case error:
 				if tc.want != err {
 					t.Errorf("error is %q, want %q",
