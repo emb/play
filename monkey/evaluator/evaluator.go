@@ -71,12 +71,62 @@ type BadFn struct {
 
 // Error returns a string describing the error
 func (b BadFn) Error() string {
-	return fmt.Sprintf("bad fn call, %T is not a function", b.exp)
+	return fmt.Sprintf("bad fn call, %s is not a function", b.exp)
+}
+
+// BadBuiltinArg describes an unexpected builtin function call with
+// unsupported argument type
+type BadBuiltinArg struct {
+	name    string
+	argtype object.Type
+}
+
+// Error returns a string describing the error
+func (b BadBuiltinArg) Error() string {
+	return fmt.Sprintf("bad argument type %s for bultin in '%s'",
+		b.argtype, b.name)
+}
+
+// BadBuiltinNArgs describes the wrong number of arguments to a builtin
+// function.
+type BadBuiltinNArgs struct {
+	name  string
+	nargs int
+	got   int
+}
+
+// Error returns a string describing the error
+func (b BadBuiltinNArgs) Error() string {
+	return fmt.Sprintf("bad number of arguments %d to builtin '%s' which expects %d",
+		b.got, b.name, b.nargs)
 }
 
 // ErrUnexpected is an unexpected error within the evaluator it should
 // not happen
 var ErrUnexpected = errors.New("unexpected error")
+
+var builtins = map[string]*object.BuiltinFunct{
+	"len": &object.BuiltinFunct{
+		Fn: func(args ...object.Object) (object.Object, error) {
+			if len(args) != 1 {
+				return nil, BadBuiltinNArgs{
+					name:  "len",
+					nargs: 1,
+					got:   len(args),
+				}
+			}
+			str, ok := args[0].(*object.Str)
+			if !ok {
+				return nil, BadBuiltinArg{
+					name:    "len",
+					argtype: args[0].Type(),
+				}
+			}
+			result := object.Int(len(*str))
+			return &result, nil
+		},
+	},
+}
 
 // Eval evaluates the Monkey AST.
 func Eval(node ast.Node, env *object.Environment) (object.Object, error) {
@@ -152,11 +202,13 @@ func Eval(node ast.Node, env *object.Environment) (object.Object, error) {
 			return &null, nil
 		}
 	case *ast.Identifier:
-		v, ok := env.Get(n.Value)
-		if !ok {
-			return nil, UnboundIdent{ident: n.Value}
+		if v, ok := env.Get(n.Value); ok {
+			return v, nil
 		}
-		return v, nil
+		if b, ok := builtins[n.Value]; ok {
+			return b, nil
+		}
+		return nil, UnboundIdent{ident: n.Value}
 	case *ast.FunctionLiteral:
 		return &object.Funct{
 			Env:        env,
@@ -331,15 +383,14 @@ func evalExprs(exps []ast.Expression, env *object.Environment) ([]object.Object,
 }
 
 func apply(fn object.Object, args []object.Object) (object.Object, error) {
-	funct, ok := fn.(*object.Funct)
-	if !ok {
+	switch fn := fn.(type) {
+	case *object.Funct:
+		return Eval(fn.Body, makeFnEnv(fn, args))
+	case *object.BuiltinFunct:
+		return fn.Fn(args...)
+	default:
 		return nil, BadFn{exp: fn.Type()}
 	}
-	result, err := Eval(funct.Body, makeFnEnv(funct, args))
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
 }
 
 func makeFnEnv(fn *object.Funct, args []object.Object) *object.Environment {

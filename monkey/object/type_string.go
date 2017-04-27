@@ -4,9 +4,9 @@ package object
 
 import "fmt"
 
-const _Type_name = "IntegerBooleanNullReturnFunction"
+const _Type_name = "IntegerStringBooleanNullReturnFunctionBuiltin"
 
-var _Type_index = [...]uint8{0, 7, 14, 18, 24, 32}
+var _Type_index = [...]uint8{0, 7, 13, 20, 24, 30, 38, 45}
 
 func (i Type) String() string {
 	if i < 0 || i >= Type(len(_Type_index)-1) {

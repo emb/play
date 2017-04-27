@@ -27,6 +27,7 @@ const (
 	Null
 	Return
 	Function
+	Builtin
 )
 
 // Object is an internal representation of values in the monkey
@@ -144,3 +145,14 @@ func (f *Funct) Inspect() string {
 	buf.WriteString(f.Body.String())
 	return buf.String()
 }
+
+// BuiltinFunct describes a builtin function within Monkey
+type BuiltinFunct struct {
+	Fn func(args ...Object) (Object, error)
+}
+
+// Type return object type
+func (*BuiltinFunct) Type() Type { return Builtin }
+
+// Inspect provides a string representation of the builtin
+func (*BuiltinFunct) Inspect() string { return "builtin function" }

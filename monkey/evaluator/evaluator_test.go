@@ -281,6 +281,38 @@ func TestStringLiteral(t *testing.T) {
 
 }
 
+func TestBuiltinFunctions(t *testing.T) {
+	tests := []struct {
+		input string
+		want  interface{}
+	}{
+		{`len("")`, 0},
+		{`len("four")`, 4},
+		{`len("hello world")`, 11},
+		{"len(1)", BadBuiltinArg{name: "len", argtype: object.Integer}},
+		{
+			`len("one", "two")`,
+			BadBuiltinNArgs{name: "len", nargs: 1, got: 2},
+		},
+	}
+	for i, tc := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			result, err := testEval(tc.input)
+			switch want := tc.want.(type) {
+			case int:
+				testIntObj(t, result, int64(want))
+			case error:
+				if tc.want != err {
+					t.Errorf("error is %q, want %q",
+						err, tc.want)
+				}
+			default:
+				t.Errorf("unexpected want value")
+			}
+		})
+	}
+}
+
 func testEval(input string) (object.Object, error) {
 	parse := parser.New(lexer.New(input))
 	return Eval(parse.Program(), object.NewEnvironment())
