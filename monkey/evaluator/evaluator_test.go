@@ -170,6 +170,7 @@ func TestErrorHandling(t *testing.T) {
 			infixErr(object.Boolean, "+", object.Boolean),
 		},
 		{"foobar", UnboundIdent{ident: "foobar"}},
+		{`"hi" - "ho"`, infixErr(object.String, "-", object.String)},
 	}
 	for i, tc := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
@@ -256,15 +257,28 @@ addTwo(3);
 }
 
 func TestStringLiteral(t *testing.T) {
-	input := `"Hello String!"`
-	result, _ := testEval(input)
-	str, ok := result.(*object.Str)
-	if !ok {
-		t.Fatalf("result is of type %T, want *object.Str", result)
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{`"Hello String!"`, "Hello String!"},
+		{`"Concatenate" + " " + "Me" + "!"`, "Concatenate Me!"},
 	}
-	if string(*str) != "Hello String!" {
-		t.Errorf(`str has %q, want "Hello String!"`, str)
+	for i, tc := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			result, _ := testEval(tc.input)
+			str, ok := result.(*object.Str)
+			if !ok {
+				t.Fatalf("result is of type %T, want *object.Str",
+					result)
+			}
+			if string(*str) != tc.want {
+				t.Errorf("str has %q, want %q", *str, tc.want)
+			}
+
+		})
 	}
+
 }
 
 func testEval(input string) (object.Object, error) {

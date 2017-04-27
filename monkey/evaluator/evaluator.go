@@ -248,6 +248,8 @@ func evalInfix(op string, left object.Object, right object.Object) (object.Objec
 		}
 	case left.Type() == object.Integer:
 		return evalInfixInts(op, left, right)
+	case left.Type() == object.String:
+		return evalInfixStrs(op, left, right)
 
 	// NOTE: the following comparisons are pointer
 	// comparisons and since we deal with all other types
@@ -290,6 +292,16 @@ func evalInfixInts(op string, left, right object.Object) (object.Object, error) 
 	default:
 		return nil, ErrUnexpected
 	}
+}
+
+func evalInfixStrs(op string, l, r object.Object) (object.Object, error) {
+	if op != token.PLUS {
+		return nil, BadInfixOp{left: l.Type(), op: op, right: r.Type()}
+	}
+	lv := l.(*object.Str)
+	rv := r.(*object.Str)
+	result := object.Str(string(*lv) + string(*rv))
+	return &result, nil
 }
 
 func truthy(obj object.Object) bool {
