@@ -1,0 +1,17 @@
+TODO
+====
+
+A wish list of things that I should experiment with.
+
+* TODO Replace constants with iota and stringer see `go doc stringer`.
+* TODO What is the value of TokenLiteral every where? should it be removed?
+* TODO Implement Unicode Lexer so Monkey can be UTF8 compatible.
+* TODO Parser tests are repetitive they require re-thinking and re-writing also the use of sub tests
+* TODO String Literal tokenising should support escape characters.
+* TODO Fix/Remove all the error types in the evaluator
+* TODO Evaluate ast implementation it could be improved
+* TODO The object system is weird can we simplify?
+* TODO The repl needs enhancements with up/down keys
+* TODO The repl should take in source code.
+* TODO Source code organization? packages?
+* TODO Add Line/Column numbers to Lexer/Parser errors
