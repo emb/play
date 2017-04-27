@@ -9,6 +9,7 @@ package object
 import (
 	"bytes"
 	"fmt"
+	"hash/fnv"
 	"strconv"
 	"strings"
 
@@ -25,6 +26,7 @@ const (
 	String
 	Boolean
 	Array
+	Hash
 	Null
 	Return
 	Function
@@ -38,6 +40,18 @@ type Object interface {
 	Inspect() string
 }
 
+// Hashable an interface that is used for types that can be keys to a
+// hash.
+type Hashable interface {
+	HashKey() HashKey
+}
+
+// HashKey describes a key for the Hash type
+type HashKey struct {
+	Type  Type
+	Value uint64
+}
+
 // Int represents an integer value within monkey
 type Int int64
 
@@ -46,6 +60,11 @@ func (i *Int) Type() Type { return Integer }
 
 // Inspect provides a string representation of an Int value.
 func (i *Int) Inspect() string { return strconv.FormatInt(int64(*i), 10) }
+
+// HashKey returns a HashKey useful when constructing Hashes
+func (i Int) HashKey() HashKey {
+	return HashKey{Type: i.Type(), Value: uint64(i)}
+}
 
 // Str represents a string value within monkey
 type Str string
@@ -57,6 +76,13 @@ func (s *Str) Type() Type { return String }
 // string literal.
 func (s *Str) Inspect() string { return fmt.Sprintf("%q", *s) }
 
+// HashKey returns a HashKey useful when constructing Hashes
+func (s Str) HashKey() HashKey {
+	h := fnv.New64a()
+	h.Write([]byte(s))
+	return HashKey{Type: s.Type(), Value: h.Sum64()}
+}
+
 // Bool represents a boolean value
 type Bool bool
 
@@ -65,6 +91,15 @@ func (*Bool) Type() Type { return Boolean }
 
 // Inspect provides a string representation of boolean value.
 func (b *Bool) Inspect() string { return fmt.Sprintf("%t", *b) }
+
+// HashKey returns a HashKey useful when constructing Hashes
+func (b Bool) HashKey() HashKey {
+	var v uint64
+	if b {
+		v = 1
+	}
+	return HashKey{Type: b.Type(), Value: v}
+}
 
 // Arr represents an array within monkey
 type Arr []Object
@@ -82,6 +117,38 @@ func (a Arr) Inspect() string {
 	buf.WriteByte('[')
 	buf.WriteString(strings.Join(es, ", "))
 	buf.WriteByte(']')
+	return buf.String()
+}
+
+// HashPair describes a pair of key value.
+type HashPair struct {
+	Key   Object
+	Value Object
+}
+
+// HashMap describes a map within monkey language
+type HashMap struct {
+	Pairs map[HashKey]HashPair
+}
+
+// Type returns the object type
+func (h *HashMap) Type() Type { return Hash }
+
+// Inspect returns a string representation of a hash
+func (h *HashMap) Inspect() string {
+	if h == nil {
+		return ""
+	}
+	var buf bytes.Buffer
+	pairs := []string{}
+	for _, p := range h.Pairs {
+		pstr := fmt.Sprintf("%s: %s",
+			p.Key.Inspect(), p.Value.Inspect())
+		pairs = append(pairs, pstr)
+	}
+	buf.WriteByte('{')
+	buf.WriteString(strings.Join(pairs, ", "))
+	buf.WriteByte('}')
 	return buf.String()
 }
 

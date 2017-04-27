@@ -171,11 +171,15 @@ func TestErrorHandling(t *testing.T) {
 		},
 		{"foobar", UnboundIdent{ident: "foobar"}},
 		{`"hi" - "ho"`, infixErr(object.String, "-", object.String)},
+		{
+			`{"name": "Monkey"}[fn(x) {x}]`,
+			badkey(object.Function),
+		},
 	}
 	for i, tc := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			_, err := testEval(tc.input)
-			if err != tc.err {
+			if err.Error() != tc.err.Error() {
 				t.Errorf("error is %q, want %q", err, tc.err)
 			}
 		})
@@ -373,7 +377,7 @@ func TestArrayLiterals(t *testing.T) {
 	testIntObj(t, arr[2], 6)
 }
 
-func TestArrayIndexExpr(t *testing.T) {
+func TestIndexExpr(t *testing.T) {
 	tests := []struct {
 		input string
 		want  interface{}
@@ -394,9 +398,17 @@ func TestArrayIndexExpr(t *testing.T) {
 			"let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]",
 			2,
 		},
+		{`{}["foo"]`, nil},
+		{`{5: 5}[5]`, 5},
+		{`{true: 5}[true]`, 5},
+		{`{false: 5}[false]`, 5},
+		{`{"foo": 5}["foo"]`, 5},
+		{`{"foo": 5}["bar"]`, nil},
+		{`let k = "foo"; {"foo": 5}[k];`, 5},
 	}
 	for i, tc := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Logf("input %s", tc.input)
 			result, _ := testEval(tc.input)
 			if i, ok := tc.want.(int); ok {
 				testIntObj(t, result, int64(i))
@@ -404,6 +416,43 @@ func TestArrayIndexExpr(t *testing.T) {
 			}
 			testIsNull(t, result)
 		})
+	}
+}
+
+func TestHashExpr(t *testing.T) {
+	input := `let two = "two";
+{
+  "one": 10 -9,
+  two: 1 + 1,
+  "thr" + "ee": 6 / 2,
+  4: 4,
+  true: 5,
+  false: 6
+};
+`
+	want := map[object.Hashable]int64{
+		object.Str("one"):   1,
+		object.Str("two"):   2,
+		object.Str("three"): 3,
+		object.Int(4):       4,
+		object.Bool(true):   5,
+		object.Bool(false):  6,
+	}
+	result, _ := testEval(input)
+	hash, ok := result.(*object.HashMap)
+	if !ok {
+		t.Fatalf("hash is of type %T, want *object.HashMap", result)
+	}
+	if len(hash.Pairs) != len(want) {
+		t.Fatalf("len(hash) is %d elements, want %d",
+			len(hash.Pairs), len(want))
+	}
+	for k, v := range want {
+		pair, ok := hash.Pairs[k.HashKey()]
+		if !ok {
+			t.Errorf("pair not found for key %#v", k)
+		}
+		testIntObj(t, pair.Value, v)
 	}
 }
 

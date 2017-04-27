@@ -35,6 +35,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.IF, p.ifexpr)
 	p.registerPrefix(token.FUNCTION, p.fn)
 	p.registerPrefix(token.LBRACKET, p.array)
+	p.registerPrefix(token.LBRACE, p.hash)
 
 	p.registerInfix(token.PLUS, p.infix)
 	p.registerInfix(token.MINUS, p.infix)
@@ -339,6 +340,30 @@ func (p *Parser) index(left ast.Expression) ast.Expression {
 		return nil
 	}
 	return exp
+}
+
+func (p *Parser) hash() ast.Expression {
+	hash := &ast.HashLiteral{
+		Token: p.c,
+		Pairs: make(map[ast.Expression]ast.Expression),
+	}
+	for !p.peekIs(token.RBRACE) {
+		p.next()
+		key := p.expr(Lowest)
+		if !p.nextIfPeek(token.COLON) {
+			return nil
+		}
+		p.next()
+		value := p.expr(Lowest)
+		hash.Pairs[key] = value
+		if !p.peekIs(token.RBRACE) && !p.nextIfPeek(token.COMMA) {
+			return nil
+		}
+	}
+	if !p.nextIfPeek(token.RBRACE) {
+		return nil
+	}
+	return hash
 }
 
 // nextIfPeek checks if the next/peek token type matches t then call

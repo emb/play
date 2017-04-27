@@ -407,11 +407,76 @@ func TestArrayLiteralExpressions(t *testing.T) {
 			stmt.Expression)
 	}
 	if len(array.Elements) != 3 {
-		t.Fatalf("len(array) is %d, want 3", len(array.Elements))
+		t.Fatalf("len(array) has %d elements, want 3",
+			len(array.Elements))
 	}
 	testIntegerLiteral(t, array.Elements[0], 1)
 	testInfix(t, array.Elements[1], 2, "*", 3)
 	testInfix(t, array.Elements[2], 3, "+", 3)
+}
+
+func TestHashLiteralExpression(t *testing.T) {
+	tests := []struct {
+		input string
+		want  map[string]func(ast.Expression)
+	}{
+		{`{}`, map[string]func(ast.Expression){}},
+		{
+			`{"one": 1, "two": 2, "three": 3}`,
+			map[string]func(ast.Expression){
+				"one": func(e ast.Expression) {
+					testIntegerLiteral(t, e, 1)
+				},
+				"two": func(e ast.Expression) {
+					testIntegerLiteral(t, e, 2)
+				},
+				"three": func(e ast.Expression) {
+					testIntegerLiteral(t, e, 3)
+				},
+			},
+		},
+		{
+			`{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}`,
+			map[string]func(e ast.Expression){
+				"one": func(e ast.Expression) {
+					testInfix(t, e, 0, "+", 1)
+				},
+				"two": func(e ast.Expression) {
+					testInfix(t, e, 10, "-", 8)
+				},
+				"three": func(e ast.Expression) {
+					testInfix(t, e, 15, "/", 5)
+				},
+			},
+		},
+	}
+	for i, tc := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			parse := New(lexer.New(tc.input))
+			program := parse.Program()
+			checkErrors(t, parse)
+
+			stmt := firstExpression(t, program)
+			hash, ok := stmt.Expression.(*ast.HashLiteral)
+			if !ok {
+				t.Fatalf("stmt.Expression is of type %T, want *ast.HashLiteral",
+					stmt.Expression)
+			}
+			if len(hash.Pairs) != len(tc.want) {
+				t.Errorf("len(hash) has %d elements, want %d",
+					len(hash.Pairs), len(tc.want))
+			}
+			for key, value := range hash.Pairs {
+				literal, ok := key.(*ast.StringLiteral)
+				if !ok {
+					t.Errorf("key is of type %T, want *ast.StringLiteral",
+						key)
+				}
+				testf := tc.want[literal.String()]
+				testf(value)
+			}
+		})
+	}
 }
 
 func TestIndexEpression(t *testing.T) {

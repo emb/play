@@ -181,6 +181,32 @@ func (a *ArrayLiteral) String() string {
 	return buf.String()
 }
 
+// HashLiteral describes hashes in monkey
+type HashLiteral struct {
+	// Token stores the `{`
+	Token token.Token
+	Pairs map[Expression]Expression
+}
+
+// TokenLiteral returns the `{` literal
+func (h *HashLiteral) TokenLiteral() string { return h.Token.Literal }
+
+// String returns a string representation of the hash
+func (h *HashLiteral) String() string {
+	if h == nil {
+		return ""
+	}
+	var buf bytes.Buffer
+	pairs := []string{}
+	for k, v := range h.Pairs {
+		pairs = append(pairs, fmt.Sprintf("%s:%s", k, v))
+	}
+	buf.WriteByte('{')
+	buf.WriteString(strings.Join(pairs, ", "))
+	buf.WriteByte('}')
+	return buf.String()
+}
+
 // IndexExpr describes an expression of the form myarray[1]
 type IndexExpr struct {
 	// Token is the `[`

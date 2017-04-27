@@ -266,6 +266,8 @@ func Eval(node ast.Node, env *object.Environment) (object.Object, error) {
 			return nil, err
 		}
 		return object.Arr(result), nil
+	case *ast.HashLiteral:
+		return evalHash(n, env)
 	case *ast.PrefixExpr:
 		r, err := Eval(n.Right, env)
 		if err != nil {
@@ -494,17 +496,54 @@ func evalExprs(exps []ast.Expression, env *object.Environment) ([]object.Object,
 }
 
 func evalIndex(left, index object.Object) (object.Object, error) {
-	if left.Type() != object.Array && index.Type() != object.Integer {
+	switch {
+	case left.Type() == object.Array && index.Type() == object.Integer:
+		arr := left.(object.Arr)
+		i := int64(*index.(*object.Int))
+		max := int64(len(arr) - 1)
+		if i < 0 || i > max {
+			return &null, nil
+		}
+		return arr[i], nil
+	case left.Type() == object.Hash:
+		hash := left.(*object.HashMap)
+		key, ok := index.(object.Hashable)
+		if !ok {
+			return nil, badkey(index.Type())
+		}
+		pair, ok := hash.Pairs[key.HashKey()]
+		if !ok {
+			return &null, nil
+		}
+		return pair.Value, nil
+	default:
 		return nil, fmt.Errorf("bad index operator on type %s",
 			left.Type())
 	}
-	arr := left.(object.Arr)
-	i := int64(*index.(*object.Int))
-	max := int64(len(arr) - 1)
-	if i < 0 || i > max {
-		return &null, nil
+}
+
+func badkey(t object.Type) error {
+	return fmt.Errorf("bad key %s for a hash", t)
+}
+
+func evalHash(n *ast.HashLiteral, env *object.Environment) (object.Object, error) {
+	pairs := make(map[object.HashKey]object.HashPair)
+	for kn, vn := range n.Pairs {
+		k, err := Eval(kn, env)
+		if err != nil {
+			return nil, err
+		}
+		hk, ok := k.(object.Hashable)
+		if !ok {
+			return nil, badkey(k.Type())
+		}
+		v, err := Eval(vn, env)
+		if err != nil {
+			return nil, err
+		}
+		pairs[hk.HashKey()] = object.HashPair{Key: k, Value: v}
 	}
-	return arr[i], nil
+	return &object.HashMap{Pairs: pairs}, nil
 }
 
 func apply(fn object.Object, args []object.Object) (object.Object, error) {
