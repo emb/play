@@ -221,6 +221,14 @@ var builtins = map[string]*object.BuiltinFunct{
 			return object.Arr(ret), nil
 		},
 	},
+	"puts": &object.BuiltinFunct{
+		Fn: func(args ...object.Object) (object.Object, error) {
+			for _, arg := range args {
+				fmt.Println(arg.Inspect())
+			}
+			return &null, nil
+		},
+	},
 }
 
 // Eval evaluates the Monkey AST.
