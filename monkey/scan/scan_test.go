@@ -1,6 +1,9 @@
 package scan
 
-import "testing"
+import (
+	"strconv"
+	"testing"
+)
 
 type tok struct {
 	typ Type
@@ -11,7 +14,11 @@ const whitespace = " \t \n\n"
 
 var testTokens = [...]tok{
 	{Comment, "# General identifiers\n"},
-	{Identifier, "some_x"},
+	{Identifier, "foobar"},
+	{String, `"eek!"`},
+	{String, `"monkey 'the gopher' twain"`},
+	{String, `"monkey \"the gopher\" twain"`},
+	{String, `"It is 12\" long."`},
 
 	{Comment, "# Keyword identifiers\n"},
 	{Let, "let"},
@@ -63,4 +70,22 @@ func TestScan(t *testing.T) {
 		line += countNewLines(tt.lit + whitespace)
 	}
 	testToken(t, Token{}, tok{EOF, ""}, 0)
+}
+
+// TestScanString tests some string scanning edge cases.
+func TestScanString(t *testing.T) {
+	tests := []struct {
+		input string
+	}{
+		{`"hello world!`},
+		{`"hello world\"`},
+		{`"hi theer\`},
+	}
+	for i, tc := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			s := NewScanner(tc.input)
+			tk := s.Next()
+			testToken(t, tk, tok{Error, "unterminated quoted string"}, 1)
+		})
+	}
 }

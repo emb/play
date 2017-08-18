@@ -108,10 +108,12 @@ func scanAny(s *Scanner) stateFn {
 		s.line++
 		s.ignore()
 		return scanAny(s)
-	case isSpace(r):
-		return scanSpace(s)
 	case r == '#':
 		return scanComment(s)
+	case isSpace(r):
+		return scanSpace(s)
+	case r == '"':
+		return scanString(s)
 	case isAlphaNumeric(r):
 		return scanIdentifier(s)
 	default:
@@ -154,6 +156,27 @@ func scanIdentifier(s *Scanner) stateFn {
 		}
 	}
 	s.emmit(Lookup(s.input[s.start:s.pos]))
+	return scanAny
+}
+
+// scanString scans a quoted string, assumes a double quote being
+// consumed.
+func scanString(s *Scanner) stateFn {
+Loop:
+	for {
+		switch s.next() {
+		case '\\': // an escaped character.
+			if r := s.next(); r != eof && r != '\n' {
+				break
+			}
+			fallthrough
+		case eof, '\n':
+			return s.errorf("unterminated quoted string")
+		case '"': // end of the string
+			break Loop
+		}
+	}
+	s.emmit(String)
 	return scanAny
 }
 
