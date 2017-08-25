@@ -32,6 +32,17 @@ var testTokens = [...]tok{
 	{If, "if"},
 	{Else, "else"},
 	{Return, "return"},
+
+	{Comment, "# Comma, braces and colons\n"},
+	{Comma, ","},
+	{Colon, ":"},
+	{Semicolon, ";"},
+	{LeftBrack, "["},
+	{LeftParen, "("},
+	{LeftBrace, "{"},
+	{RightBrack, "]"},
+	{RightParen, ")"},
+	{RightBrace, "}"},
 }
 
 var source = func() (s string) {

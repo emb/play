@@ -116,6 +116,33 @@ func scanAny(s *Scanner) stateFn {
 		return scanString(s)
 	case isAlphaNumeric(r):
 		return scanIdentifier(s)
+	case r == ':':
+		s.emmit(Colon)
+		return scanAny(s)
+	case r == ';':
+		s.emmit(Semicolon)
+		return scanAny(s)
+	case r == ',':
+		s.emmit(Comma)
+		return scanAny(s)
+	case r == '[':
+		s.emmit(LeftBrack)
+		return scanAny(s)
+	case r == '(':
+		s.emmit(LeftParen)
+		return scanAny(s)
+	case r == '{':
+		s.emmit(LeftBrace)
+		return scanAny(s)
+	case r == ']':
+		s.emmit(RightBrack)
+		return scanAny(s)
+	case r == ')':
+		s.emmit(RightParen)
+		return scanAny(s)
+	case r == '}':
+		s.emmit(RightBrace)
+		return scanAny(s)
 	default:
 		return s.errorf("bad character at line %d: %#U", s.line, r)
 	}
