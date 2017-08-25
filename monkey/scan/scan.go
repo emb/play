@@ -155,7 +155,13 @@ func scanIdentifier(s *Scanner) stateFn {
 			break
 		}
 	}
-	s.emmit(Lookup(s.input[s.start:s.pos]))
+	if all(s.input[s.start:s.pos], unicode.IsDigit) {
+		// all characters are digits
+		s.emmit(Integer)
+	} else {
+		// could be a keyword or an identifier
+		s.emmit(Lookup(s.input[s.start:s.pos]))
+	}
 	return scanAny
 }
 
@@ -189,4 +195,16 @@ func isSpace(r rune) bool {
 // alphanumeric unicode character or `_` character.
 func isAlphaNumeric(r rune) bool {
 	return r == '_' || unicode.IsDigit(r) || unicode.IsLetter(r)
+}
+
+// all returns true if applying f to all elements of xs returns true.
+//
+// useful for something like all(xs, unicode.IsLetter)
+func all(xs string, f func(rune) bool) bool {
+	for _, x := range xs {
+		if !f(x) {
+			return false
+		}
+	}
+	return true
 }

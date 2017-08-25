@@ -15,10 +15,14 @@ const whitespace = " \t \n\n"
 var testTokens = [...]tok{
 	{Comment, "# General identifiers\n"},
 	{Identifier, "foobar"},
+	{Identifier, "foobar_l33t"},
+	{Identifier, "x"},
 	{String, `"eek!"`},
 	{String, `"monkey 'the gopher' twain"`},
 	{String, `"monkey \"the gopher\" twain"`},
 	{String, `"It is 12\" long."`},
+	{Integer, "1"},
+	{Integer, "94876678"},
 
 	{Comment, "# Keyword identifiers\n"},
 	{Let, "let"},
