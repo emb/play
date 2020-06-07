@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"strings"
 	"testing"
 )
@@ -18,13 +17,7 @@ func TestReadInstructions(t *testing.T) {
 	@END
 	0;JMP
 `)
-	ch, _ := readInstructions(nil, prog)
-	insts := []*instruction{}
-	for i := range ch {
-		t.Logf("instruction: %s", i)
-		insts = append(insts, i)
-	}
-
+	insts, _ := readInstructions(prog)
 	want := 9
 	if len(insts) != want {
 		t.Errorf("readInstructions: want %d insturctions got %d", want, len(insts))
@@ -63,27 +56,5 @@ func TestReadInstructions(t *testing.T) {
 				t.Errorf("instruction: want %v, got %v", tc.want, tc.got)
 			}
 		})
-	}
-}
-
-func TestReadInstructionStops(t *testing.T) {
-	stop := make(chan os.Signal, 1)
-	stop <- os.Kill
-	r := strings.NewReader(`// some program
-	@R0
-	D=A
-(END)
-	@END
-	0;JMP
-`)
-	ch, _ := readInstructions(stop, r)
-	var count int
-	for range ch {
-		// drain
-		count++
-	}
-	if count > 4 {
-		// the channel has a buffer of 4 the 5 insturctions above should never finish.
-		t.Errorf("did not stop processed %d instructions expecting less than 4", count)
 	}
 }

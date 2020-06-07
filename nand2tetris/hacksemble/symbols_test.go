@@ -30,15 +30,8 @@ func TestReadSymbols(t *testing.T) {
 		newInstruction("(EEK)", 2, 2),
 		newInstruction("@j", 3, 3),
 	}
-	ch := make(chan *instruction)
-	go func(c chan *instruction, input []*instruction) {
-		for _, inst := range insts {
-			c<-inst
-		}
-		close(ch)
-	}(ch, insts)
 
-	s := readSymbols(ch)
+	s := readSymbols(insts)
 
 	// Check for predefined symbol
 	addr, ok := s.Get("R4")

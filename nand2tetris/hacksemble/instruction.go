@@ -60,10 +60,9 @@ func (i *instruction) String() string {
 	return fmt.Sprintf("[%s] line(%d) %s", t, i.line, i.val)
 }
 
-
 // encodeA encodes AInstruction in hack computer. An A inscruction
 // contains a positive integer value or a symbol.
-func encodeA(v string, getSymbol func(string)(uint16, bool)) (uint16, error) {
+func encodeA(v string, getSymbol func(string) (uint16, bool)) (uint16, error) {
 	b, err := strconv.ParseUint(v, 10, 15)
 	if err == nil {
 		return uint16(b), nil

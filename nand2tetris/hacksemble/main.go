@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"strings"
 )
@@ -25,12 +24,9 @@ func main() {
 		exitErr(fmt.Errorf("Usage: %s File.asm", os.Args[0]))
 	}
 
-	stop := make(chan os.Signal)
-	signal.Notify(stop, os.Interrupt, os.Kill)
-
 	status := 0
 	for _, f := range os.Args[1:] {
-		err := assemble(stop, f)
+		err := assemble(f)
 		if err != nil {
 			status = 1
 			fmt.Fprintf(os.Stderr, "Error: %s", err)
@@ -46,7 +42,7 @@ func exitErr(err error) {
 	fmt.Fprintln(os.Stderr, err)
 }
 
-func assemble(stop <-chan os.Signal, fname string) error {
+func assemble(fname string) error {
 	if filepath.Ext(fname) != ".asm" {
 		return fmt.Errorf("assemble %q: can only process .asm files", fname)
 	}
@@ -65,26 +61,16 @@ func assemble(stop <-chan os.Signal, fname string) error {
 	}
 	defer out.Close()
 
-	// Go routine to read instructions
-	chSymbols := make(chan *instruction)
-	chOutput := make(chan *instruction, 10)
-	insts, cerr := readInstructions(stop, in)
+	insts, err := readInstructions(in)
+	if err != nil {
+		return err
+	}
 
-	// fan out
-	go func(in <-chan *instruction, sym, out chan *instruction) {
-		for inst := range in {
-			sym<-inst // Send here first
-			out<-inst // then here
-		}
-		close(sym)
-		close(out)
-	}(insts, chSymbols, chOutput)
-	
+	// build symbols first pass
+	s := readSymbols(insts)
 
-	// Gut the symbols table.
-	s := readSymbols(chSymbols)
-	
-	for inst := range chOutput {
+	// write output
+	for _, inst := range insts {
 		if inst.typ == Label {
 			continue
 		}
@@ -94,7 +80,7 @@ func assemble(stop <-chan os.Signal, fname string) error {
 		}
 		fmt.Fprintf(out, "%016b\n", bits)
 	}
-	return cerr
+	return nil
 }
 
 func output(fname string) (io.WriteCloser, error) {
