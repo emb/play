@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"strconv"
@@ -13,11 +14,23 @@ import (
 type CommandType uint8
 
 const (
-	CmdEOF CommandType = iota // signal the what we are done.
+	_ CommandType = iota
 	CmdArithmetic
 	CmdPush
 	CmdPop
 )
+
+func (t CommandType) String() string {
+	switch t {
+	case CmdArithmetic:
+		return "Arithmetic"
+	case CmdPush:
+		return "Push"
+	case CmdPop:
+		return "Pop"
+	}
+	return "Unknown"
+}
 
 // Command stores information about a command.
 type Command struct {
@@ -27,6 +40,17 @@ type Command struct {
 	arg string
 	// an optional parameter (e.g. memory access index)
 	param *int
+}
+
+func (c *Command) String() string {
+	buf := bytes.NewBufferString(c.kind.String())
+	buf.WriteString(" ")
+	buf.WriteString(c.arg)
+	if c.param != nil {
+		buf.WriteString(" ")
+		buf.WriteString(strconv.Itoa(*c.param))
+	}
+	return buf.String()
 }
 
 // Parser a helper struct to manage errors
@@ -64,6 +88,11 @@ func (p *Parser) Parse() <-chan *Command {
 		close(ch)
 	}()
 	return ch
+}
+
+// Err returns parser errors if any.
+func (p *Parser) Err() error {
+	return p.err
 }
 
 func parse(line string) (*Command, error) {
