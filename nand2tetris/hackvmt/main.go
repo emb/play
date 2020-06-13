@@ -52,15 +52,15 @@ func process(fname string) error {
 	defer in.Close()
 
 	// Output
-	outname := fmt.Sprintf("%s.asm", strings.TrimSuffix(fname, filepath.Ext(fname)))
-	out, err := os.Create(outname)
+	name := strings.TrimSuffix(fname, filepath.Ext(fname))
+	out, err := os.Create(fmt.Sprintf("%s.asm", name))
 	if err != nil {
 		return err
 	}
 	defer out.Close()
 
 	p := NewParser(in)
-	err = Translate(p.Parse(), out)
+	err = Translate(filepath.Base(name), p.Parse(), out)
 	// Translate errors
 	if err != nil {
 		return fmt.Errorf("process %s: %s", fname, err)
