@@ -73,7 +73,7 @@ func process(fname string) error {
 	}()
 
 	// Let the parser star working.
-	err = Parse(name, in, ch)
+	err = Parse(filepath.Base(name), in, ch)
 	close(ch) // ensure to close the channel after we have finished parsing.
 	if err != nil {
 		return err

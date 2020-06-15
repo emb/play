@@ -34,12 +34,21 @@ func Translate(ch <-chan *Command, w io.Writer) error {
 
 func translate(c *Command, unique int) (string, error) {
 	switch c.Type {
+	// Memory Access
 	case CmdPush:
 		return push(c.Namespace, c.Arg, *c.Param)
+	// Arithmetic
 	case CmdPop:
 		return pop(c.Namespace, c.Arg, *c.Param)
 	case CmdArithmetic:
 		return arith(c.Arg, unique)
+	// Control
+	case CmdLabel:
+		return label(c.Namespace, c.Scope, c.Arg), nil
+	case CmdGoto:
+		return gotolabel(c.Namespace, c.Scope, c.Arg), nil
+	case CmdIfGoto:
+		return ifgotolabel(c.Namespace, c.Scope, c.Arg), nil
 	}
 	return "", fmt.Errorf("translate: unsupported command %s", c)
 }
@@ -96,4 +105,19 @@ func arith(op string, unique int) (string, error) {
 		return notFrag, nil
 	}
 	return "", fmt.Errorf("translate: unsupported arithmetic command %q", op)
+}
+
+// genLabel generate a label.
+func genLabel(name, scope, label string) string { return fmt.Sprintf("%s.%s$%s", name, scope, label) }
+
+func label(name, scope, label string) string {
+	return fmt.Sprintf("(%s)\n", genLabel(name, scope, label))
+}
+
+func gotolabel(name, scope, label string) string {
+	return fmt.Sprintf(gotoFrag, genLabel(name, scope, label))
+}
+
+func ifgotolabel(name, scope, label string) string {
+	return fmt.Sprintf(ifgotoFrag, popFrag, genLabel(name, scope, label))
 }

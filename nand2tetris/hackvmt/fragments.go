@@ -225,3 +225,13 @@ const notFrag = `	@SP
 	A=M-1
 	M=!M
 `
+
+// goto fragment unconditionally jump to label
+const gotoFrag = `	@%s
+	0;JMP
+`
+
+// if goto fragment pops a value of the stack and conditionally jumps.
+const ifgotoFrag = `%s	@%s
+	D;JNE
+`
