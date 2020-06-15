@@ -59,15 +59,26 @@ func process(fname string) error {
 	}
 	defer out.Close()
 
-	p := NewParser(in)
-	err = Translate(filepath.Base(name), p.Parse(), out)
-	// Translate errors
+	// buffer so we don't have to process everything in memory.
+	ch := make(chan *Command, 4)
+
+	// Start a go routine that writes the asm file.
+	errch := make(chan error)
+	go func() {
+		err := Translate(ch, out)
+		if err != nil {
+			errch <- err
+		}
+		close(errch)
+	}()
+
+	// Let the parser star working.
+	err = Parse(name, in, ch)
+	close(ch) // ensure to close the channel after we have finished parsing.
 	if err != nil {
-		return fmt.Errorf("process %s: %s", fname, err)
+		return err
 	}
-	// Parse errors
-	if err := p.Err(); err != nil {
-		return fmt.Errorf("process %s: %s", fname, err)
-	}
-	return nil
+
+	// Now wait & check for translation errors.
+	return <-errch
 }

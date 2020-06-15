@@ -6,13 +6,13 @@ import (
 )
 
 // Translate converts VM code to assembly code.
-func Translate(name string, ch <-chan *Command, w io.Writer) error {
+func Translate(ch <-chan *Command, w io.Writer) error {
 	// unique is useful to add for any labels that maybe used.
 	// there is no semantic
 	unique := 0
 	// channel gets closed when we finish reading.
 	for cmd := range ch {
-		translated, err := translate(name, cmd, unique)
+		translated, err := translate(cmd, unique)
 		if err != nil {
 			return err
 		}
@@ -32,14 +32,14 @@ func Translate(name string, ch <-chan *Command, w io.Writer) error {
 	return nil
 }
 
-func translate(name string, c *Command, unique int) (string, error) {
-	switch c.kind {
+func translate(c *Command, unique int) (string, error) {
+	switch c.Type {
 	case CmdPush:
-		return push(name, c.arg, *c.param)
+		return push(c.Namespace, c.Arg, *c.Param)
 	case CmdPop:
-		return pop(name, c.arg, *c.param)
+		return pop(c.Namespace, c.Arg, *c.Param)
 	case CmdArithmetic:
-		return arith(c.arg, unique)
+		return arith(c.Arg, unique)
 	}
 	return "", fmt.Errorf("translate: unsupported command %s", c)
 }

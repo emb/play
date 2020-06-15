@@ -6,8 +6,8 @@ import (
 
 func TestPushTranslation(t *testing.T) {
 	n := 3
-	cmd := &Command{kind: CmdPush, arg: "constant", param: &n}
-	got, err := translate(cmd)
+	cmd := &Command{Type: CmdPush, Arg: "constant", Param: &n}
+	got, err := translate(cmd, 0)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
@@ -25,8 +25,8 @@ func TestPushTranslation(t *testing.T) {
 }
 
 func TestArithmeticTranslation(t *testing.T) {
-	cmd := &Command{kind: CmdArithmetic, arg: "add"}
-	got, err := translate(cmd)
+	cmd := &Command{Type: CmdArithmetic, Arg: "add"}
+	got, err := translate(cmd, 0)
 	if err != nil {
 		t.Fatalf("unexpected error %s", err)
 	}
@@ -35,7 +35,7 @@ func TestArithmeticTranslation(t *testing.T) {
 	D=M
 	@SP
 	A=M-1
-	M=D+M
+	M=M+D
 `
 	if string(got) != want {
 		t.Errorf("translate: want [%s] got [%s]", want, got)
