@@ -55,9 +55,7 @@ func (t CommandType) String() string {
 type Command struct {
 	// Name a name space for the command typically the file name.
 	Namespace string
-	// Scope defines if the command is in a function or global scope.
-	Scope string
-	Type  CommandType
+	Type      CommandType
 	// Arg stores the arithmetic operation for arithmetic commands
 	// or the memory segment for memory access commands.
 	Arg string
@@ -81,7 +79,6 @@ func (c *Command) String() string {
 // encounters one.
 func Parse(name string, r io.Reader, ch chan<- *Command) error {
 	s := bufio.NewScanner(r) // By default we scan lines
-	scope := "global"
 	for s.Scan() {
 		cmd, err := parse(s.Text())
 		if err != nil {
@@ -92,14 +89,7 @@ func Parse(name string, r io.Reader, ch chan<- *Command) error {
 			continue
 		}
 		cmd.Namespace = name
-		cmd.Scope = scope
 		ch <- cmd
-		if cmd.Type == CmdFunction {
-			scope = cmd.Arg
-		}
-		if cmd.Type == CmdReturn {
-			scope = "global"
-		}
 	}
 	if err := s.Err(); err != nil {
 		return err
@@ -213,7 +203,12 @@ func parseFunction(parts []string) (*Command, error) {
 		return nil, fmt.Errorf("parse: %s invalid %s: %w", parts[0], m[parts[0]], err)
 	}
 
-	cmd := Command{Arg: parts[1], Param: &n}
+	name := parts[1]
+	if err := isValidName(name); err != nil {
+		return nil, err
+	}
+
+	cmd := Command{Arg: name, Param: &n}
 	switch strings.ToLower(parts[0]) {
 	case "function":
 		cmd.Type = CmdFunction
@@ -232,14 +227,21 @@ func parseLabel(parts []string) (*Command, error) {
 	}
 
 	label := parts[1]
-	if unicode.IsDigit(rune(label[0])) {
-		return nil, fmt.Errorf("parse: invalid label %q that starts with a digit", label)
-	}
-	for _, r := range []rune(label) {
-		if !unicode.IsDigit(r) && !unicode.IsLetter(r) &&
-			r != '.' && r != '_' && r != ':' {
-			return nil, fmt.Errorf("parse: invalid %c in label %q", r, label)
-		}
+	if err := isValidName(label); err != nil {
+		return nil, err
 	}
 	return &Command{Type: CmdLabel, Arg: label}, nil
+}
+
+func isValidName(n string) error {
+	if unicode.IsDigit(rune(n[0])) {
+		return fmt.Errorf("parse: invalid name %q that starts with a digit", n)
+	}
+	for _, r := range []rune(n) {
+		if !unicode.IsDigit(r) && !unicode.IsLetter(r) &&
+			r != '.' && r != '_' && r != ':' {
+			return fmt.Errorf("parse: invalid %c in name %q", r, n)
+		}
+	}
+	return nil
 }

@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"reflect"
-	"strings"
 	"testing"
 )
 
@@ -35,13 +34,14 @@ func TestParse(t *testing.T) {
 		// Function calls
 		{"function foo 2", &Command{Type: CmdFunction, Arg: "foo", Param: ptr(2)}, ""},
 		{"function foo ab", nil, `parse: function invalid locals: strconv.Atoi: parsing "ab": invalid syntax`},
+		{"function fo&oo 4", nil, `parse: invalid & in name "fo&oo"`},
 		{"call foo 3", &Command{Type: CmdCall, Arg: "foo", Param: ptr(3)}, ""},
 		{"call foo cd", nil, `parse: call invalid arguments: strconv.Atoi: parsing "cd": invalid syntax`},
 		{"return", &Command{Type: CmdReturn}, ""},
 		// Program control
 		{"label foo", &Command{Type: CmdLabel, Arg: "foo"}, ""},
-		{"label 1foo", nil, `parse: invalid label "1foo" that starts with a digit`},
-		{"label f?oo", nil, `parse: invalid ? in label "f?oo"`},
+		{"label 1foo", nil, `parse: invalid name "1foo" that starts with a digit`},
+		{"label f?oo", nil, `parse: invalid ? in name "f?oo"`},
 		{"goto foo", &Command{Type: CmdGoto, Arg: "foo"}, ""},
 		{"if-goto foo", &Command{Type: CmdIfGoto, Arg: "foo"}, ""},
 	}
@@ -58,32 +58,5 @@ func TestParse(t *testing.T) {
 				t.Errorf("parse err want %q got %q", tc.wantErr, err)
 			}
 		})
-	}
-}
-
-func TestParseScope(t *testing.T) {
-	prog := strings.NewReader(`function foo 1
-	push constant 1
-	return
-label bar
-`)
-	ch := make(chan *Command, 4) // 4 lines above
-	err := Parse("Ruin", prog, ch)
-	close(ch)
-	if err != nil {
-		t.Fatalf("unexpected error: %s", err)
-	}
-
-	got := []string{}
-	for c := range ch {
-		if c.Namespace != "Ruin" {
-			t.Errorf("command: %s does not have expected namespace %q got %q", c, "Ruin", c.Namespace)
-		}
-		got = append(got, c.Scope)
-	}
-
-	want := []string{"global", "foo", "foo", "global"}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("parse: want scope %s but got %s", want, got)
 	}
 }

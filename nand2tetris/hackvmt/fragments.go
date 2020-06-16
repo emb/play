@@ -197,12 +197,12 @@ const branchFrag = `%s	@SP
 `
 
 // branch creates a branching fragment based on t, t must be one of EQ/LT/GT.
-func branch(t string, unique int) (string, error) {
+func branch(name, t string, unique int) (string, error) {
 	if !(t == "EQ" || t == "LT" || t == "GT") {
 		return "", fmt.Errorf("translate: cannot branch with %q expecting one of EQ,LT,GT", t)
 	}
-	branch := fmt.Sprintf("IF.%s.%d", t, unique)
-	end := fmt.Sprintf("IF.END.%d", unique)
+	branch := fmt.Sprintf("%s.if_%s.%d", name, t, unique)
+	end := fmt.Sprintf("%s.if_NOT.%d", name, unique)
 	return fmt.Sprintf(branchFrag, popFrag, branch, t, end, branch, end), nil
 }
 
@@ -234,4 +234,77 @@ const gotoFrag = `	@%s
 // if goto fragment pops a value of the stack and conditionally jumps.
 const ifgotoFrag = `%s	@%s
 	D;JNE
+`
+
+// return fragment. Stores frame into R13 & return-address in R14
+const retFrag = `	@LCL
+	D=M
+	@R13	// FRAME
+	M=D
+	@5
+	A=D-A	// FRAME-5 (return-address)
+	D=M
+	@R14	// (return-address)
+	M=D
+	@SP
+	AM=M-1
+	D=M
+	@ARG	// *ARG = pop()
+	A=M
+	M=D
+	@ARG
+	D=M+1
+	@SP	// SP = ARG+1
+	M=D
+	@R13
+	AM=M-1	// FRAME-1
+	D=M
+	@THAT
+	M=D
+	@R13
+	AM=M-1	// FRAME-2
+	D=M
+	@THIS
+	M=D
+	@R13
+	AM=M-1	// FRAME-3
+	D=M
+	@ARG
+	M=D
+	@R13
+	AM=M-1	// Frame-4
+	D=M
+	@LCL
+	M=D
+	@R14
+	A=M
+	0;JMP
+`
+
+// call fragment which prepares the current frame before transferring control.
+const callFrag = `	@%s	// push return addr
+	D=A
+%s	@LCL	// push LCL
+	D=M
+%s	@ARG	// push ARG
+	D=M
+%s	@THIS	// push THIS
+	D=M
+%s	@THAT	// push THAT
+	D=M
+%s	@SP	// ARG = SP - n - 5
+	D=M
+	@%d
+	D=D-A
+	@5
+	D=D-A
+	@ARG
+	M=D
+	@SP
+	D=M
+	@LCL
+	M=D
+	@%s
+	0;JMP
+(%s)
 `
