@@ -47,6 +47,7 @@ func process(path string) error {
 
 	files := []string{}
 	var outpath string
+	var bootstrap bool
 	if info.IsDir() {
 		matches, err := filepath.Glob(filepath.Join(path, "*.vm"))
 		if err != nil {
@@ -57,6 +58,7 @@ func process(path string) error {
 		}
 		files = append(files, matches...)
 		outpath = filepath.Join(path, filepath.Base(path))
+		bootstrap = true // Apparently we only bootstrap if we translate a directory.
 	} else {
 		files = append(files, path)
 		outpath = strings.TrimSuffix(path, filepath.Ext(path))
@@ -75,7 +77,7 @@ func process(path string) error {
 	// Start a go routine that writes the asm file.
 	errch := make(chan error)
 	go func() {
-		err := Translate(ch, out)
+		err := Translate(bootstrap, ch, out)
 		if err != nil {
 			errch <- err
 		}

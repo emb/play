@@ -7,16 +7,18 @@ import (
 )
 
 // Translate converts VM code to assembly code.
-func Translate(ch <-chan *Command, w io.Writer) error {
+func Translate(bootstrapMe bool, ch <-chan *Command, w io.Writer) error {
 	// unique is useful to add for any labels that maybe used.
 	// there is no semantic
 	unique := 0
-	// Write initialization
-	_, err := w.Write([]byte(bootstrap(unique)))
-	if err != nil {
-		return err
+	if bootstrapMe {
+		// Write initialization
+		_, err := w.Write([]byte(bootstrap(unique)))
+		if err != nil {
+			return err
+		}
+		unique++
 	}
-	unique++
 	// channel gets closed when we finish reading.
 	for cmd := range ch {
 		translated, err := translate(cmd, unique)
