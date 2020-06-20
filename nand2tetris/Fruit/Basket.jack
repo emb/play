@@ -1,0 +1,129 @@
+/** Basket is an object representing the basket that moves on the screen. */
+class Basket {
+    // store the current location of the basket.
+    field int currentLocation;
+    // store some static variables tha will help with readability.
+    static int LEFT_EDGE;
+    static int RIGHT_EDGE;
+    static int CENTER;
+
+    /** contsructs a new basket and locates in the middle of the screen */
+    constructor Basket new() {
+        let CENTER = 7662;
+        let LEFT_EDGE = 7649;
+        let RIGHT_EDGE = 7676;
+        let currentLocation = CENTER;
+
+        do draw(currentLocation);
+        return this;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /** moveLeft moves the basket to the left for a single position */
+    method void moveLeft() {
+        if (currentLocation < LEFT_EDGE ) { return; }
+        do erase(currentLocation);
+        let currentLocation = currentLocation - 1;
+        do draw(currentLocation);
+        return;
+    }
+
+    /** moveRight moves the basket to the right one position */
+    method void moveRight() {
+        if (currentLocation > RIGHT_EDGE) { return; }
+        do erase(currentLocation);
+        let currentLocation = currentLocation + 1;
+        do draw(currentLocation);
+        return;
+    }
+
+    /** erase erases the basket at location */
+    method void erase(int location) {
+        var int memAddr, i;
+        let memAddr = 16384+location;
+        let i = 0;
+        // Cleare the sprite. Note: the basket sprite is made of 3 16bit bitmaps.
+        while (i < 3) {
+            do Memory.poke(memAddr+0, 0);
+            do Memory.poke(memAddr+32, 0);
+            do Memory.poke(memAddr+64, 0);
+            do Memory.poke(memAddr+96, 0);
+            do Memory.poke(memAddr+128, 0);
+            do Memory.poke(memAddr+160, 0);
+            do Memory.poke(memAddr+192, 0);
+            do Memory.poke(memAddr+224, 0);
+            do Memory.poke(memAddr+256, 0);
+            do Memory.poke(memAddr+288, 0);
+            do Memory.poke(memAddr+320, 0);
+            do Memory.poke(memAddr+352, 0);
+            do Memory.poke(memAddr+384, 0);
+            do Memory.poke(memAddr+416, 0);
+            do Memory.poke(memAddr+448, 0);
+            do Memory.poke(memAddr+480, 0);
+            let memAddr = memAddr + 1;
+            let i = i + 1;
+        }
+        return;
+    }
+
+    /** draw draws a basket at location) */
+    method void draw(int location) {
+        var int memAddr;
+        let memAddr = 16384+location;
+        do Memory.poke(memAddr+0, -256);
+        do Memory.poke(memAddr+32, 224);
+        do Memory.poke(memAddr+64, 24);
+        do Memory.poke(memAddr+96, 4);
+        do Memory.poke(memAddr+128, 3);
+        do Memory.poke(memAddr+160, 2);
+        do Memory.poke(memAddr+192, 30);
+        do Memory.poke(memAddr+224, 100);
+        do Memory.poke(memAddr+256, -124);
+        do Memory.poke(memAddr+288, 4232);
+        do Memory.poke(memAddr+320, 4232);
+        do Memory.poke(memAddr+352, 4368);
+        do Memory.poke(memAddr+384, 4368);
+        do Memory.poke(memAddr+416, 8736);
+        do Memory.poke(memAddr+448, 8736);
+        do Memory.poke(memAddr+480, 9280);
+        let memAddr = memAddr+1;
+        do Memory.poke(memAddr+0, 32766);
+        do Memory.poke(memAddr+32, 0);
+        do Memory.poke(memAddr+64, 0);
+        do Memory.poke(memAddr+96, 0);
+        do Memory.poke(memAddr+128, 0);
+        do Memory.poke(memAddr+160, 0);
+        do Memory.poke(memAddr+192, 0);
+        do Memory.poke(memAddr+224, -32767);
+        do Memory.poke(memAddr+256, 32766);
+        do Memory.poke(memAddr+288, 8324);
+        do Memory.poke(memAddr+320, 8324);
+        do Memory.poke(memAddr+352, 8452);
+        do Memory.poke(memAddr+384, 8324);
+        do Memory.poke(memAddr+416, 8452);
+        do Memory.poke(memAddr+448, 4232);
+        do Memory.poke(memAddr+480, 4360);
+        let memAddr = memAddr+1;
+        do Memory.poke(memAddr+0, 255);
+        do Memory.poke(memAddr+32, 1792);
+        do Memory.poke(memAddr+64, 6144);
+        do Memory.poke(memAddr+96, 8192);
+        do Memory.poke(memAddr+128, -16384);
+        do Memory.poke(memAddr+160, 16384);
+        do Memory.poke(memAddr+192, 30720);
+        do Memory.poke(memAddr+224, 9728);
+        do Memory.poke(memAddr+256, 8703);
+        do Memory.poke(memAddr+288, 4360);
+        do Memory.poke(memAddr+320, 4360);
+        do Memory.poke(memAddr+352, 2184);
+        do Memory.poke(memAddr+384, 2184);
+        do Memory.poke(memAddr+416, 1092);
+        do Memory.poke(memAddr+448, 1092);
+        do Memory.poke(memAddr+480, 548);
+        return;
+    }
+}

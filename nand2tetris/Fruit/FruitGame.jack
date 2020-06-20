@@ -1,0 +1,51 @@
+/** FruitGame manages the game loop */
+class FruitGame {
+    // basket used by FruitGame to catch fruites.
+    field Basket basket;
+    // score tracks the gamers score.
+    field int score;
+
+    /** new constructs a new fruit game */
+    constructor FruitGame new() {
+        do printHeader();
+        let basket = Basket.new();
+        let score = 0;
+        return this;
+    }
+
+    /** dispose disposes all allocated memory */
+    method void dispose() {
+        do basket.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /** printHeader prints the top header of the game */
+    method void printHeader() {
+        do Output.printString("!! CATCH THE FRUITE !!");
+        do Output.moveCursor(0, 54);
+        do Output.printString("Score: ");
+        do Output.printInt(score);
+        do Screen.drawLine(0, 15, 511, 15);
+        return;
+    }
+
+    /** loop starts the game loop */
+    method void loop() {
+        // while not ended
+        //   check keyboard
+        //   move basket
+        var boolean exit;
+        var char key;
+        let exit = false;
+
+        while (~exit) {
+            let key = Keyboard.keyPressed();
+            // Movem basket
+            if (key = 130) { do basket.moveLeft(); }  // left arrow
+            if (key = 132) { do basket.moveRight(); }   // right arrow
+            // do Sys.wait(300);
+        }
+        return;
+    }
+}
