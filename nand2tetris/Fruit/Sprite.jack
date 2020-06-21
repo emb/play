@@ -1,0 +1,77 @@
+/** Sprite contains helper method to draw/clear single stripes */
+class Sprite {
+    static int SCREEN_ADDR;
+
+    /** init must be called at least once before the game starts
+        otherwis bad things will happen */
+    function void init() {
+        let SCREEN_ADDR = 16384;
+        return;
+    }
+    
+    /** apple draw the apple sprite */
+    function void apple(int location) {
+        let location = SCREEN_ADDR+location;
+        do Memory.poke(location+0, 1664);
+        do Memory.poke(location+32, 1920);
+        do Memory.poke(location+64, 384);
+        do Memory.poke(location+96, 16060);
+        do Memory.poke(location+128, 16834);
+        do Memory.poke(location+160, -32639);
+        do Memory.poke(location+192, -32751);
+        do Memory.poke(location+224, -32759);
+        do Memory.poke(location+256, -32759);
+        do Memory.poke(location+288, -32751);
+        do Memory.poke(location+320, 16386);
+        do Memory.poke(location+352, 16386);
+        do Memory.poke(location+384, 8196);
+        do Memory.poke(location+416, 4488);
+        do Memory.poke(location+448, 3696);
+        do Memory.poke(location+480, 0);
+        return;
+    }
+
+    /** banana draw the banana sprite */
+    function void banana(int location) {
+        let location = SCREEN_ADDR+location;
+        do Memory.poke(location+0, 8192);
+        do Memory.poke(location+32, 8192);
+        do Memory.poke(location+64, 12288);
+        do Memory.poke(location+96, 18432);
+        do Memory.poke(location+128, -31744);
+        do Memory.poke(location+160, -31744);
+        do Memory.poke(location+192, -28160);
+        do Memory.poke(location+224, 18688);
+        do Memory.poke(location+256, 10496);
+        do Memory.poke(location+288, 9408);
+        do Memory.poke(location+320, 4704);
+        do Memory.poke(location+352, 4368);
+        do Memory.poke(location+384, 3208);
+        do Memory.poke(location+416, 1574);
+        do Memory.poke(location+448, 385);
+        do Memory.poke(location+480, 126);
+        return;
+    }
+
+    /** clear clears a 16bitmap sprite at location */
+    function void clear(int location) {
+        let location = SCREEN_ADDR+location;
+        do Memory.poke(location+0, 0);
+        do Memory.poke(location+32, 0);
+        do Memory.poke(location+64, 0);
+        do Memory.poke(location+96, 0);
+        do Memory.poke(location+128, 0);
+        do Memory.poke(location+160, 0);
+        do Memory.poke(location+192, 0);
+        do Memory.poke(location+224, 0);
+        do Memory.poke(location+256, 0);
+        do Memory.poke(location+288, 0);
+        do Memory.poke(location+320, 0);
+        do Memory.poke(location+352, 0);
+        do Memory.poke(location+384, 0);
+        do Memory.poke(location+416, 0);
+        do Memory.poke(location+448, 0);
+        do Memory.poke(location+480, 0);
+        return;
+    }
+}

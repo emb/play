@@ -4,29 +4,101 @@ class FruitGame {
     field Basket basket;
     // score tracks the gamers score.
     field int score;
+    // fruites store fruites on the screen.
+    field Fruites fruites;
 
     /** new constructs a new fruit game */
     constructor FruitGame new() {
-        do printHeader();
+        do Sprite.init();
         let basket = Basket.new();
         let score = 0;
+        let fruites = Fruites.new();
+        do fruites.add();
         return this;
     }
 
     /** dispose disposes all allocated memory */
     method void dispose() {
         do basket.dispose();
+        do fruit.dispose();
         do Memory.deAlloc(this);
         return;
     }
 
     /** printHeader prints the top header of the game */
     method void printHeader() {
-        do Output.printString("!! CATCH THE FRUITE !!");
+        do Output.moveCursor(0, 0);
+        do Output.printString("!! CATCH THE FRUIT !!");
         do Output.moveCursor(0, 54);
-        do Output.printString("Score: ");
-        do Output.printInt(score);
+        do Output.printString("Score:");
+        do printScore();
         do Screen.drawLine(0, 15, 511, 15);
+        return;
+    }
+
+    /** start puts the game in start mode and waits for user input */
+    method void start() {
+        var int key;
+        let key = 0;
+        do splash();
+        do Output.moveCursor(10, 25);
+        do Output.printString("Catch The Fruit");
+        do Output.moveCursor(11, 0);
+        do Output.printString("Some fruits are worth more than others! Drop any and lose points");
+        do Output.moveCursor(13, 21);
+        do Output.printString("Press any key to start!");
+        while (key = 0) { // wait for a key press
+            let key = Keyboard.keyPressed();
+        }
+        do Screen.clearScreen();
+        do printHeader();
+        do basket.draw(basket.getLocation());
+        return;
+    }
+
+    method void printScore() {
+        do Output.moveCursor(0, 61);
+        do Output.printInt(score);
+        return;
+    }
+
+    method void displayWin() {
+        do splash();
+        do Output.moveCursor(10, 25);
+        do Output.printString("YOU WIN ~(^.^)~");
+        do displayResult();
+        return;
+    }
+
+    method void displayLose() {
+        do splash();
+        do Output.moveCursor(10, 25);
+        do Output.printString("YOU LOSE (x.x)");
+        do displayResult();
+        return;
+    }
+
+    method void displayResult() {
+        do Output.moveCursor(12, 22);
+        do Output.printString("Caught: ");
+        do Output.printInt(fruites.getCaught());
+        do Output.printString(" Dropped: ");
+        do Output.printInt(fruites.getDropped());
+        return;
+    }
+
+    /** prints a background screen */
+    method void splash() {
+        var int addr, count;
+        let addr = 16384; // beginning of screen address;
+        let count = 1;
+        while (addr < 24576) {
+            if ((addr < 19000) | (addr > 22000)) {
+                do Memory.poke(addr, count);
+            }
+            let addr = addr + 1;
+            let count = count + 1;
+        }
         return;
     }
 
@@ -37,14 +109,38 @@ class FruitGame {
         //   move basket
         var boolean exit;
         var char key;
+        var int level, wait;
         let exit = false;
-
+        let level = 0;
+        let wait = 30;
+        
         while (~exit) {
             let key = Keyboard.keyPressed();
             // Movem basket
             if (key = 130) { do basket.moveLeft(); }  // left arrow
             if (key = 132) { do basket.moveRight(); }   // right arrow
-            // do Sys.wait(300);
+            let score = score + fruites.fallAndCatch(basket.getLocation());
+            do printScore();
+            if ((score > 9) & (level = 0)) {
+                do fruites.add();
+                let level = 1;
+            }
+            if ((score > 19) & (level = 1)) {
+                do fruites.add();
+                let level = 2;
+            }
+            if ((score > 20) & (level = 2)) {
+                let wait = 15;
+            }
+            if (score > 99) {
+                let exit = true;
+                do displayWin();
+            }
+            if (score < 0) {
+                let exit = true;
+                do displayLose();
+            }
+            do Sys.wait(wait);
         }
         return;
     }

@@ -1,0 +1,111 @@
+/** Fruit represents a fruit in the game */
+class Fruit {
+    // location stores the fruit location in the game
+    field int location;
+    // each fruit has a different dorp/pick score
+    field int pickScore, dropScore;
+    // type defines which type of fruit this instance is (banana/apple)
+    field int type;
+    // seed useful for random start initialization
+    field int seed;
+
+    static int BANANA;
+    static int APPLE;
+
+    /** banana creates an instance of Fruit of banana type */
+    constructor Fruit banana() {
+        do init();
+        let pickScore = 5;
+        let dropScore = -3;
+        let type = BANANA;
+        return this;
+    }
+
+    /** apple creates an instance of Fruit of apple type */
+    constructor Fruit apple() {
+        do init();
+        let pickScore = 3;
+        let dropScore = -1;
+        let type = APPLE;
+        return this;
+    }
+
+    /** dispose of internal memory */
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /** getPicked returns a score when a fruite is picked */
+    method int getPicked() {
+        return pickScore;
+    }
+
+    /** getDropped return a score for when the fruit is dropped */
+    method int getDropped() {
+        return dropScore;
+    }
+
+    method void init() {
+        let BANANA = 0;
+        let APPLE = 1;
+        // Use the stack pointer as a source of randomness.
+        let seed = Memory.peek(0);
+        let location = randomStart();
+        return;
+    }
+
+    method int randomStart() {
+        // We should be able to start from 0 -> 31 + 512.
+        var int r;
+        let r = seed / 32;
+        let r = r + 512;
+        let seed = r + seed;
+        return Math.max(r, 541); // 541 screen boundary at the  top.
+    }
+
+    /** caught signals that the fruit has been caught. */
+    method void caught() {
+        let location = randomStart();
+        return;
+    }
+
+    method void draw() {
+        if (type = BANANA) {
+            do Sprite.banana(location);
+        } else {
+            do Sprite.apple(location);
+        }
+        return;
+    }
+
+    method void erase() {
+        do Sprite.clear(location);
+        return;
+    }
+
+    /** delay the start of drawing this fruit */
+    method void delayStart() {
+         let location = 0 - randomStart();
+         return;
+    }
+
+    /** fall use to make the fruit fall. Returns the current fruit location,
+        if the fruit drops it returns -1 before resetting.*/
+    method int fall() {
+        if (location < 512) {
+            let location = location + 32;
+            return location;
+        }
+
+        do erase();
+        let location = location + 32;
+        if (location > 7679) { // 8192maxscreen - 512 (32row*16col)
+            let location = randomStart();
+            do draw();
+            return -1;
+        }
+        do draw();
+        return location;
+    }
+}

@@ -1,0 +1,87 @@
+/** Fruites manages fruites on the screen */
+class Fruites {
+    // fruites store fruit objects
+    field Array fruites;
+    // n stores the number of fruites added.
+    field int n;
+    // caught stores the number of caught fruites
+    field int caught, dropped;
+
+    /** new constructs a fruites object */
+    constructor Fruites new() {
+        let fruites = Array.new(3);  // Maximume 3 fruites on the screen
+        let n = 0;
+        let caught = 0;
+        let dropped = 0;
+        return this;
+    }
+
+    /** dispose deallocates this objects memory. */
+    method void dispose() {
+        var int i;
+        var Fruite f;
+        let i = 0;
+        while (i < n) {
+            let f = fruites[i];
+            do f.dispose();
+        }
+        do fruites.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method int getCaught() {
+        return caught;
+    }
+
+    method int getDropped() {
+        return dropped;
+    }
+
+    // add ads a fruit to the screen
+    method void add() {
+        var Fruit f;
+        if (n > 2) {
+            return;
+        }
+        if (n = 0) {
+            let f = Fruit.apple();
+        }
+        if (n = 1) {
+            let f = Fruit.banana();
+            do f.delayStart();
+        }
+        if (n = 2) {
+            let f = Fruit.apple();
+            do f.delayStart();
+        }
+        let fruites[n] = f;
+        let n = n + 1;
+        return;
+    }
+
+    /** fallAndCatch makes all the fruites fall a step. Computes a score if the basket catches
+        the fruit*/
+    method int fallAndCatch(int basketLocation) {
+        var int i, l, score;
+        var Fruit f;
+        let score = 0;
+        let i = 0;
+        while (i < n) {
+            let f = fruites[i];
+            let l = f.fall();
+            if ((l > (basketLocation-1)) & (l < (basketLocation+3))) {
+                do f.caught();
+                let score = score + f.getPicked();
+                let caught = caught + 1;
+            } else {
+                if (l = -1) {
+                   let score = score + f.getDropped();
+                   let dropped = dropped + 1;
+                }
+            }
+            let i = i + 1;
+        }
+        return score;
+    }
+}
