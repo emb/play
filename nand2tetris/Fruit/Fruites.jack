@@ -52,7 +52,7 @@ class Fruites {
             do f.delayStart();
         }
         if (n = 2) {
-            let f = Fruit.apple();
+            let f = Fruit.cherry();
             do f.delayStart();
         }
         let fruites[n] = f;

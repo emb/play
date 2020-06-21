@@ -11,12 +11,13 @@ class Fruit {
 
     static int BANANA;
     static int APPLE;
+    static int CHERRY;
 
     /** banana creates an instance of Fruit of banana type */
     constructor Fruit banana() {
         do init();
-        let pickScore = 5;
-        let dropScore = -3;
+        let pickScore = 10;
+        let dropScore = -7;
         let type = BANANA;
         return this;
     }
@@ -24,9 +25,18 @@ class Fruit {
     /** apple creates an instance of Fruit of apple type */
     constructor Fruit apple() {
         do init();
-        let pickScore = 3;
-        let dropScore = -1;
+        let pickScore = 5;
+        let dropScore = -3;
         let type = APPLE;
+        return this;
+    }
+
+    /** cherry create an instance of Fruit of cherry type */
+    constructor Fruit cherry() {
+        do init();
+        let pickScore = 15;
+        let dropScore = -12;
+        let type = CHERRY;
         return this;
     }
 
@@ -49,6 +59,7 @@ class Fruit {
     method void init() {
         let BANANA = 0;
         let APPLE = 1;
+        let CHERRY = 2;
         // Use the stack pointer as a source of randomness.
         let seed = Memory.peek(0);
         let location = randomStart();
@@ -73,8 +84,12 @@ class Fruit {
     method void draw() {
         if (type = BANANA) {
             do Sprite.banana(location);
-        } else {
+        }
+        if (type = APPLE) {
             do Sprite.apple(location);
+        }
+        if (type = CHERRY) {
+            do Sprite.cherry(location);
         }
         return;
     }

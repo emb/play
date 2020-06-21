@@ -53,6 +53,27 @@ class Sprite {
         return;
     }
 
+    /** cherry draw the cherry sprite */
+    function void cherry(int location) {
+        let location = SCREEN_ADDR+location;
+        do Memory.poke(location+32, 2);
+        do Memory.poke(location+64, 2);
+        do Memory.poke(location+96, 30);
+        do Memory.poke(location+128, 98);
+        do Memory.poke(location+160, 388);
+        do Memory.poke(location+192, 516);
+        do Memory.poke(location+224, 1032);
+        do Memory.poke(location+256, 6152);
+        do Memory.poke(location+288, 12296);
+        do Memory.poke(location+320, 18456);
+        do Memory.poke(location+352, -31708);
+        do Memory.poke(location+384, -31678);
+        do Memory.poke(location+416, 18498);
+        do Memory.poke(location+448, 12324);
+        do Memory.poke(location+480, 24);
+        return;
+    }
+
     /** clear clears a 16bitmap sprite at location */
     function void clear(int location) {
         let location = SCREEN_ADDR+location;
