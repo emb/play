@@ -2,7 +2,10 @@
 // namespace hence this package.
 package token
 
-import "fmt"
+import (
+	"encoding/xml"
+	"fmt"
+)
 
 // Token represents a Jack token
 type Token struct {
@@ -12,6 +15,34 @@ type Token struct {
 
 func (t Token) String() string {
 	return fmt.Sprintf("%s(%q)", t.Type, t.Literal)
+}
+
+// Return which type of Lexical Element this token belongs to.
+func (t Token) Element() string {
+	if t.Type == Identifier {
+		return "identifier"
+	}
+	if t.Type == StringConstant {
+		return "stringConstant"
+	}
+	if t.Type == IntegerConstant {
+		return "integerConstant"
+	}
+	if t.Type >= Class && t.Type <= Return {
+		return "keyword"
+	}
+	if t.Type >= LeftBrace && t.Type <= Tilde {
+		return "symbol"
+	}
+	return "unknown"
+}
+
+func (t Token) MarshalXML(enc *xml.Encoder, s xml.StartElement) error {
+	if t.Type == EOF {
+		return nil
+	}
+	s.Name.Local = t.Element()
+	return enc.EncodeElement(t.Literal, s)
 }
 
 // TokenType an enumeration of all jack tokens.
