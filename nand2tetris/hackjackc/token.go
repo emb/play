@@ -1,6 +1,6 @@
 // Package token declares a bunch of useful constants that need a
 // namespace hence this package.
-package token
+package main
 
 import (
 	"encoding/xml"
@@ -19,7 +19,7 @@ func (t Token) String() string {
 
 // Return which type of Lexical Element this token belongs to.
 func (t Token) Element() string {
-	if t.Type == Identifier {
+	if t.Type == IdentifierToken {
 		return "identifier"
 	}
 	if t.Type == StringConstant {
@@ -28,10 +28,10 @@ func (t Token) Element() string {
 	if t.Type == IntegerConstant {
 		return "integerConstant"
 	}
-	if t.Type >= Class && t.Type <= Return {
+	if t.Type >= ClassToken && t.Type <= ReturnToken {
 		return "keyword"
 	}
-	if t.Type >= LeftBrace && t.Type <= Tilde {
+	if t.Type >= LeftBraceToken && t.Type <= TildeToken {
 		return "symbol"
 	}
 	return "unknown"
@@ -51,82 +51,82 @@ type TokenType int
 const (
 	// Useful unexpected tokens.
 	EOF TokenType = iota
-	Illegal
+	IllegalToken
 
 	// Keywords
-	Class
-	Constructor
-	Function
-	Method
-	Field
-	Static
-	Var
-	Int
-	Char
-	Boolean
-	Void
-	True
-	False
-	Null
-	This
-	Let
-	Do
-	If
-	Else
-	While
-	Return
+	ClassToken
+	ConstructorToken
+	FunctionToken
+	MethodToken
+	FieldToken
+	StaticToken
+	VarToken
+	IntToken
+	CharToken
+	BooleanToken
+	VoidToken
+	TrueToken
+	FalseToken
+	NullToken
+	ThisToken
+	LetToken
+	DoToken
+	IfToken
+	ElseToken
+	WhileToken
+	ReturnToken
 
 	// Symbols
-	LeftBrace
-	RightBrace
-	LeftParen
-	RightParen
-	LeftBraket
-	RightBraket
-	Dot
-	Comma
-	SemiColon
-	Plus
-	Minus
-	Multiply
-	Divide
-	Ampersand
-	Pipe
-	GreaterThan
-	LessThan
-	Equal
-	Tilde
+	LeftBraceToken
+	RightBraceToken
+	LeftParenToken
+	RightParenToken
+	LeftBraketToken
+	RightBraketToken
+	DotToken
+	CommaToken
+	SemiColonToken
+	PlusToken
+	MinusToken
+	MultiplyToken
+	DivideToken
+	AmpersandToken
+	PipeToken
+	GreaterThanToken
+	LessThanToken
+	EqualToken
+	TildeToken
 
 	// Constants
 	IntegerConstant
 	StringConstant
 
 	// Identifier
-	Identifier
+	IdentifierToken
 )
 
 var keywords = map[string]TokenType {
-	"class": Class,
-		"constructor": Constructor,
-		"function": Function,
-		"method": Method,
-		"field": Field,
-		"static": Static,
-		"var": Var,
-		"int": Int,
-		"char": Char,
-		"boolean": Boolean,
-		"void": Void,
-		"true": True,
-		"false": False,
-		"null": Null,
-		"this": This,
-		"let": Let,
-		"do": Do,
-		"if": If,
-		"else": Else,
-		"while": While,
-		"return": Return,
+	"class": ClassToken,
+		"constructor": ConstructorToken,
+		"function": FunctionToken,
+		"method": MethodToken,
+		"field": FieldToken,
+		"static": StaticToken,
+		"var": VarToken,
+		"int": IntToken,
+		"char": CharToken,
+		"boolean": BooleanToken,
+		"void": VoidToken,
+		"true": TrueToken,
+		"false": FalseToken,
+		"null": NullToken,
+		"this": ThisToken,
+		"let": LetToken,
+		"do": DoToken,
+		"if": IfToken,
+		"else": ElseToken,
+		"while": WhileToken,
+		"return": ReturnToken,
 }
 
 // KeywordOrIdentifier returns a token based on the incoming string.
@@ -135,5 +135,5 @@ func KeywordOrIdentifier(k string) Token {
 	if ok {
 		return Token{Type: t, Literal: k}
 	}
-	return Token{Type: Identifier, Literal: k}
+	return Token{Type: IdentifierToken, Literal: k}
 }

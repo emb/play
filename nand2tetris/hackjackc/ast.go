@@ -1,53 +1,50 @@
 package main
 
-import (
-	"hackjackc/token"
-)
 
 // Modeling the AST to contain tokens for now so it is easy to print an XML
 
 type Program struct {
-	Class  token.Token
+	Class  Token
 	Name   Identifier
-	LeftB  token.Token
+	LeftB  Token
 	Vars   []ClassVarDecleration   `xml:"classVarDec"`
 	Subs   []SubroutineDecleration `xml:"subroutineDec"`
-	RightB token.Token
+	RightB Token
 }
 
 type ClassVarDecleration struct {
-	DecType token.Token // static or field
-	VarType token.Token // int, char, boolean or Class Name
+	DecType Token // static or field
+	VarType Token // int, char, boolean or Class Name
 	Names   []Identifier
-	Semi    token.Token
+	Semi    Token
 }
 
 type SubroutineDecleration struct {
-	SubType token.Token // method, constructor or function
-	RetType token.Token // type or void
+	SubType Token // method, constructor or function
+	RetType Token // type or void
 	Name    Identifier
-	LeftP   token.Token
+	LeftP   Token
 	Params  Parameters `xml:"parameterList"`
-	RightP  token.Token
+	RightP  Token
 	SubBody SubroutineBody `xml:"subroutineBody"`
 }
 
 type Parameters struct {
-	Tokens []token.Token
+	Tokens []Token
 }
 
 type SubroutineBody struct {
-	LeftB      token.Token
+	LeftB      Token
 	VarDec     []VarDeclaration `xml:"varDec"`
 	Statements Statements       `xml:"statements"`
-	RightB     token.Token
+	RightB     Token
 }
 
 type VarDeclaration struct {
-	Var     token.Token
-	VarType token.Token
+	Var     Token
+	VarType Token
 	Names   []Identifier
-	Semi    token.Token
+	Semi    Token
 }
 
 type Statements struct {
@@ -56,63 +53,63 @@ type Statements struct {
 
 type LetStatement struct {
 	XMLName       struct{} `xml:"letStatement"`
-	Let           token.Token
+	Let           Token
 	Name          Identifier
-	LeftB         *token.Token
+	LeftB         *Token
 	ArrExpression *Expression `xml:"arrexpression"`
-	RightB        *token.Token
-	Equal         token.Token
+	RightB        *Token
+	Equal         Token
 	Expression    Expression `xml:"expression"`
-	Semi          token.Token
+	Semi          Token
 }
 
 type IfStatement struct {
 	XMLName        struct{} `xml:"ifStatement"`
-	If             token.Token
-	LeftP          token.Token
+	If             Token
+	LeftP          Token
 	Expression     Expression `xml:"expression"`
-	RightP         token.Token
-	LeftB          token.Token
+	RightP         Token
+	LeftB          Token
 	Statements     Statements `xml:"statements"`
-	RightB         token.Token
-	Else           *token.Token
-	ElseLeftB      *token.Token
+	RightB         Token
+	Else           *Token
+	ElseLeftB      *Token
 	ElseStatements *Statements `xml:"elsestatements"`
-	ElseRightB     *token.Token
+	ElseRightB     *Token
 }
 
 type WhileStatement struct {
 	XMLName    struct{} `xml:"whileStatement"`
-	While      token.Token
-	LeftP      token.Token
+	While      Token
+	LeftP      Token
 	Expression Expression `xml:"expression"`
-	RightP     token.Token
-	LeftB      token.Token
+	RightP     Token
+	LeftB      Token
 	Statements Statements `xml:"statements"`
-	RightB     token.Token
+	RightB     Token
 }
 
 type DoStatement struct {
 	XMLName struct{} `xml:"doStatement"`
-	Do      token.Token
+	Do      Token
 	SubroutineCall
-	Semi token.Token
+	Semi Token
 }
 
 type SubroutineCall struct {
 	Dest        *Identifier
-	Dot         *token.Token
+	Dot         *Token
 	Name        Identifier
-	LeftP       token.Token
+	LeftP       Token
 	Expressions *ExpressionList `xml:",omitempty"`
-	RightP      token.Token
+	RightP      Token
 }
 
 type ReturnStatement struct {
 	XMLName    struct{} `xml:"returnStatement"`
-	Return     token.Token
+	Return     Token
 	Expression *Expression `xml:"expression"`
-	Semi       token.Token
+	Semi       Token
 }
 
 type ExpressionList struct {
@@ -122,32 +119,32 @@ type ExpressionList struct {
 
 type Expression struct {
 	Term1 Term `xml:"term"`
-	Op    *token.Token
+	Op    *Token
 	Term2 *Term `xml:"term2"`
 }
 
 type Term struct {
 	// IntegerConstant, StringConstant, KeywordConstant, Identifier
-	Token *token.Token
+	Token *Token
 
 	// Array
-	ArrayIdent  *token.Token
-	ArrayLeftB  *token.Token
+	ArrayIdent  *Token
+	ArrayLeftB  *Token
 	ArrayExpr   *Expression `xml:"arrexpression"`
-	ArrayRightB *token.Token
+	ArrayRightB *Token
 
 	// Subroutine Call
 	SubroutineCall `xml:",omitempty"`
 
 	// Parenthesized
-	ParenLeftP      *token.Token
+	ParenLeftP      *Token
 	ParenExpression *Expression `xml:"expression"`
-	ParenRightP     *token.Token
+	ParenRightP     *Token
 
 	// Unary Operation
-	UnaryOp      *token.Token
+	UnaryOp      *Token
 	UnaryOperand *Term `xml:"term"`
 }
 
-//type VarType struct {token.Token}
-type Identifier struct{ token.Token }
+//type VarType struct {Token}
+type Identifier struct{ Token }

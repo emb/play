@@ -80,13 +80,13 @@ func compile(f string) error {
 		log.Fatal(err)
 	}
 	// Hack to fix xml expression layout.
-	x = bytes.ReplaceAll(x, []byte("arrexpression"), []byte("expression"))
-	x = bytes.ReplaceAll(x, []byte("elsestatements"), []byte("statements"))
-	x = bytes.ReplaceAll(x, []byte("term2"), []byte("term"))
-	x = bytes.ReplaceAll(x, []byte("<expressionList></expressionList>"),
-		[]byte("<expressionList>\n</expressionList>"))
-	x = bytes.ReplaceAll(x, []byte("<parameterList></parameterList>"),
-		[]byte("<parameterList>\n</parameterList>"))
+	x = bytes.Replace(x, []byte("arrexpression"), []byte("expression"), -1)
+	x = bytes.Replace(x, []byte("elsestatements"), []byte("statements"), -1)
+	x = bytes.Replace(x, []byte("term2"), []byte("term"), -1)
+	x = bytes.Replace(x, []byte("<expressionList></expressionList>"),
+		[]byte("<expressionList>\n</expressionList>"), -1)
+	x = bytes.Replace(x, []byte("<parameterList></parameterList>"),
+		[]byte("<parameterList>\n</parameterList>"), -1)
 
 	outpath := strings.TrimSuffix(f, filepath.Ext(f))
 	out, err := os.Create(fmt.Sprintf("%s.xml", outpath))
