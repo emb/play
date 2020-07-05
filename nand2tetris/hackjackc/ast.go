@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/emb/play/nand2tetris/hackjackc/token"
+	"hackjackc/token"
 )
 
 // Modeling the AST to contain tokens for now so it is easy to print an XML

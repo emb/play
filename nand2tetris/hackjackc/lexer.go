@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"unicode"
 
-	"github.com/emb/play/nand2tetris/hackjackc/token"
+	"hackjackc/token"
 )
 
 // Lexer provides an easy access type to tokenize a Jack source file.

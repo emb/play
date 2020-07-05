@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/emb/play/nand2tetris/hackjackc/token"
+	"hackjackc/token"
 )
 
 func tkn(typ token.TokenType, l string) token.Token {

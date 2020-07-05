@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/emb/play/nand2tetris/hackjackc/token"
+	"hackjackc/token"
 )
 
 type Parser struct {
