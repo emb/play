@@ -67,12 +67,9 @@ func (p *Parser) parseProgram() (*Program, error) {
 		return nil, fmt.Errorf("parse program: want } got: %s", r)
 	}
 	return &Program{
-		Class:  c,
-		LeftB:  l,
 		Name:   Identifier{i},
 		Vars:   varDecs,
 		Subs:   subDecs,
-		RightB: r,
 	}, nil
 }
 
@@ -98,7 +95,6 @@ func (p *Parser) parseClassVarDecs(vardecs *[]ClassVarDecleration) error {
 		DecType: dt,
 		VarType: vt,
 		Names:   names,
-		Semi:    semi,
 	})
 	return p.parseClassVarDecs(vardecs)
 }
@@ -112,8 +108,7 @@ func (p *Parser) parseIdentifiers() ([]Identifier, error) {
 		}
 		names = append(names, Identifier{v})
 		if p.peek().Type == CommaToken {
-			// TODO: Hack to make xml printing work. Will have to remove this later.
-			names = append(names, Identifier{p.next()})
+			p.next() // skip comma
 			continue
 		}
 		break
@@ -154,7 +149,7 @@ func (p *Parser) parseSubroutineDecs(subdecs *[]SubroutineDecleration) error {
 	if lp.Type != LeftParenToken {
 		return fmt.Errorf("subroutine: want ( got: %s", lp)
 	}
-	ps := Parameters{[]Token{}}
+	ps := []Parameter{}
 	for {
 		if p.peek().Type == RightParenToken {
 			break
@@ -163,14 +158,13 @@ func (p *Parser) parseSubroutineDecs(subdecs *[]SubroutineDecleration) error {
 		if err != nil {
 			return fmt.Errorf("subroutine: parameters: %w", err)
 		}
-		ps.Tokens = append(ps.Tokens, t)
 		vn := p.next()
 		if vn.Type != IdentifierToken {
 			return fmt.Errorf("subroutine: parameters: want identifier got: %s", vn)
 		}
-		ps.Tokens = append(ps.Tokens, vn)
+		ps = append(ps, Parameter{Name: Identifier{vn}, Type:t})
 		if p.peek().Type == CommaToken {
-			ps.Tokens = append(ps.Tokens, p.next())
+			p.next()
 			continue
 		}
 		break
@@ -187,9 +181,7 @@ func (p *Parser) parseSubroutineDecs(subdecs *[]SubroutineDecleration) error {
 		SubType: st,
 		RetType: rt,
 		Name:    Identifier{n},
-		LeftP:   lp,
 		Params:  ps,
-		RightP:  rp,
 		SubBody: body,
 	})
 	// Check if we are done.
@@ -208,7 +200,7 @@ func (p *Parser) parseSubroutineBody() (SubroutineBody, error) {
 	if err := p.parseVarDeclaration(&varDecs); err != nil {
 		return SubroutineBody{}, fmt.Errorf("body: %w", err)
 	}
-	statements := Statements{[]interface{}{}}
+	statements := Statements{[]Compiler{}}
 	if err := p.parseStatements(&statements); err != nil {
 		return SubroutineBody{}, fmt.Errorf("body: %w", err)
 	}
@@ -217,10 +209,8 @@ func (p *Parser) parseSubroutineBody() (SubroutineBody, error) {
 		return SubroutineBody{}, fmt.Errorf("body: want } got: %s", rb)
 	}
 	return SubroutineBody{
-		LeftB:      lb,
 		VarDec:     varDecs,
 		Statements: statements,
-		RightB:     rb,
 	}, nil
 }
 
@@ -228,7 +218,7 @@ func (p *Parser) parseVarDeclaration(vardecs *[]VarDeclaration) error {
 	if p.peek().Type != VarToken {
 		return nil
 	}
-	v := p.next()
+	p.next() // var
 	t, err := p.parseType()
 	if err != nil {
 		return fmt.Errorf("var declaration: %w", err)
@@ -242,10 +232,8 @@ func (p *Parser) parseVarDeclaration(vardecs *[]VarDeclaration) error {
 		return fmt.Errorf("var declaration: want ; got: %s", semi)
 	}
 	*vardecs = append(*vardecs, VarDeclaration{
-		Var:     v,
 		VarType: t,
 		Names:   names,
-		Semi:    semi,
 	})
 	return p.parseVarDeclaration(vardecs)
 }
@@ -256,7 +244,7 @@ func (p *Parser) parseStatements(stmts *Statements) error {
 	if tt != LetToken && tt != IfToken && tt != WhileToken && tt != DoToken && tt != ReturnToken {
 		return fmt.Errorf("statements: want statement got: %s", tok)
 	}
-	var stmt interface{}
+	var stmt Compiler
 	var err error
 	switch tok.Type {
 	case LetToken:
@@ -280,151 +268,146 @@ func (p *Parser) parseStatements(stmts *Statements) error {
 	return p.parseStatements(stmts)
 }
 
-func (p *Parser) parseLetStatement() (LetStatement, error) {
+func (p *Parser) parseLetStatement() (*LetStatement, error) {
 	var ls LetStatement
-	ls.Let = p.next()
-	if ls.Let.Type != LetToken {
-		return LetStatement{}, fmt.Errorf("let statement: want let got: %s", ls.Let)
+	lsLet := p.next()
+	if lsLet.Type != LetToken {
+		return nil, fmt.Errorf("let statement: want let got: %s", lsLet)
 	}
 	ls.Name = Identifier{p.next()}
 	if ls.Name.Type != IdentifierToken {
-		return LetStatement{}, fmt.Errorf("let statement: want identifier got: %s", ls.Name)
+		return nil, fmt.Errorf("let statement: want identifier got: %s", ls.Name)
 	}
 	if p.peek().Type == LeftBraketToken {
-		lb := p.next()
-		ls.LeftB = &lb
+		p.next() // Left braket 
 		exp, err := p.parseExpression()
 		if err != nil {
-			return LetStatement{}, fmt.Errorf("let statement: %w", err)
+			return nil, fmt.Errorf("let statement: %w", err)
 		}
 		ls.ArrExpression = &exp
 		rb := p.next()
 		if rb.Type != RightBraketToken {
-			return LetStatement{}, fmt.Errorf("let statement: want ] got: %s", rb)
+			return nil, fmt.Errorf("let statement: want ] got: %s", rb)
 		}
-		ls.RightB = &rb
 	}
-	ls.Equal = p.next()
-	if ls.Equal.Type != EqualToken {
-		return LetStatement{}, fmt.Errorf("let statement: want = got: %s", ls.Equal)
+	eq := p.next()
+	if eq.Type != EqualToken {
+		return nil, fmt.Errorf("let statement: want = got: %s", eq)
 	}
 	exp, err := p.parseExpression()
 	if err != nil {
-		return LetStatement{}, fmt.Errorf("let statement: %w", err)
+		return nil, fmt.Errorf("let statement: %w", err)
 	}
 	ls.Expression = exp
-	ls.Semi = p.next()
-	if ls.Semi.Type != SemiColonToken {
-		return LetStatement{}, fmt.Errorf("let statement: want ; got: %s", ls.Semi)
+	semi := p.next()
+	if semi.Type != SemiColonToken {
+		return nil, fmt.Errorf("let statement: want ; got: %s", semi)
 	}
-	return ls, nil
+	return &ls, nil
 }
 
-func (p *Parser) parseIfStatement() (IfStatement, error) {
+func (p *Parser) parseIfStatement() (*IfStatement, error) {
 	var is IfStatement
-	is.If = p.next()
-	if is.If.Type != IfToken {
-		return IfStatement{}, fmt.Errorf("if statement: want if got: %s", is.If)
+	isIf := p.next()
+	if isIf.Type != IfToken {
+		return nil, fmt.Errorf("if statement: want if got: %s", isIf)
 	}
-	is.LeftP = p.next()
-	if is.LeftP.Type != LeftParenToken {
-		return IfStatement{}, fmt.Errorf("if statement: want ( got: %s", is.LeftP)
+	isLeftP := p.next()
+	if isLeftP.Type != LeftParenToken {
+		return nil, fmt.Errorf("if statement: want ( got: %s", isLeftP)
 	}
 	exp, err := p.parseExpression()
 	if err != nil {
-		return IfStatement{}, fmt.Errorf("if statement: %w", err)
+		return nil, fmt.Errorf("if statement: %w", err)
 	}
 	is.Expression = exp
-	is.RightP = p.next()
-	if is.RightP.Type != RightParenToken {
-		return IfStatement{}, fmt.Errorf("if statement: want ) got: %s", is.RightP)
+	isRightP := p.next()
+	if isRightP.Type != RightParenToken {
+		return nil, fmt.Errorf("if statement: want ) got: %s", isRightP)
 	}
-	is.LeftB = p.next()
-	if is.LeftB.Type != LeftBraceToken {
-		return IfStatement{}, fmt.Errorf("if statement: want { got: %s", is.LeftB)
+	isLeftB := p.next()
+	if isLeftB.Type != LeftBraceToken {
+		return nil, fmt.Errorf("if statement: want { got: %s", isLeftB)
 	}
-	statements := Statements{[]interface{}{}}
+	statements := Statements{[]Compiler{}}
 	if err := p.parseStatements(&statements); err != nil {
-		return IfStatement{}, fmt.Errorf("if statement: %w", err)
+		return nil, fmt.Errorf("if statement: %w", err)
 	}
 	is.Statements = statements
-	is.RightB = p.next()
-	if is.RightB.Type != RightBraceToken {
-		return IfStatement{}, fmt.Errorf("if statement: want } got: %s", is.RightB)
+	isRightB := p.next()
+	if isRightB.Type != RightBraceToken {
+		return nil, fmt.Errorf("if statement: want } got: %s", isRightB)
 	}
 	if p.peek().Type == ElseToken {
-		e := p.next()
-		is.Else = &e
+		p.next() // 
 		lb := p.next()
 		if lb.Type != LeftBraceToken {
-			return IfStatement{}, fmt.Errorf("if statement: else: want { got: %s", lb)
+			return nil, fmt.Errorf("if statement: else: want { got: %s", lb)
 		}
-		is.ElseLeftB = &lb
-		statements := Statements{[]interface{}{}}
+		statements := Statements{[]Compiler{}}
 		if err := p.parseStatements(&statements); err != nil {
-			return IfStatement{}, fmt.Errorf("if statement: else: %w", err)
+			return nil, fmt.Errorf("if statement: else: %w", err)
 		}
 		is.ElseStatements = &statements
 		rb := p.next()
 		if rb.Type != RightBraceToken {
-			return IfStatement{}, fmt.Errorf("if statement: else: want } got: %s", rb)
+			return nil, fmt.Errorf("if statement: else: want } got: %s", rb)
 		}
-		is.ElseRightB = &rb
 	}
-	return is, nil
+	return &is, nil
 }
 
-func (p *Parser) parseWhileStatement() (WhileStatement, error) {
+func (p *Parser) parseWhileStatement() (*WhileStatement, error) {
 	var ws WhileStatement
-	ws.While = p.next()
-	if ws.While.Type != WhileToken {
-		return WhileStatement{}, fmt.Errorf("while statement: want while got: %s", ws.While)
+	wsWhile := p.next()
+	if wsWhile.Type != WhileToken {
+		return nil, fmt.Errorf("while statement: want while got: %s", wsWhile)
 	}
-	ws.LeftP = p.next()
-	if ws.LeftP.Type != LeftParenToken {
-		return WhileStatement{}, fmt.Errorf("while statement: want ( got: %s", ws.LeftP)
+	wsLeftP := p.next()
+	if wsLeftP.Type != LeftParenToken {
+		return nil, fmt.Errorf("while statement: want ( got: %s", wsLeftP)
 	}
 	exp, err := p.parseExpression()
 	if err != nil {
-		return WhileStatement{}, fmt.Errorf("while statement: %w", err)
+		return nil, fmt.Errorf("while statement: %w", err)
 	}
 	ws.Expression = exp
-	ws.RightP = p.next()
-	if ws.RightP.Type != RightParenToken {
-		return WhileStatement{}, fmt.Errorf("while statement: want ) got: %s", ws.RightP)
+	wsRightP := p.next()
+	if wsRightP.Type != RightParenToken {
+		return nil, fmt.Errorf("while statement: want ) got: %s", wsRightP)
 	}
-	ws.LeftB = p.next()
-	if ws.LeftB.Type != LeftBraceToken {
-		return WhileStatement{}, fmt.Errorf("while statement: want { got: %s", ws.LeftB)
+	wsLeftB := p.next()
+	if wsLeftB.Type != LeftBraceToken {
+		return nil, fmt.Errorf("while statement: want { got: %s", wsLeftB)
 	}
-	statements := Statements{[]interface{}{}}
+	statements := Statements{[]Compiler{}}
 	if err := p.parseStatements(&statements); err != nil {
-		return WhileStatement{}, fmt.Errorf("while statement: %w", err)
+		return nil, fmt.Errorf("while statement: %w", err)
 	}
 	ws.Statements = statements
-	ws.RightB = p.next()
-	if ws.RightB.Type != RightBraceToken {
-		return WhileStatement{}, fmt.Errorf("if statement: want } got: %s", ws.RightB)
+	wsRightB := p.next()
+	if wsRightB.Type != RightBraceToken {
+		return nil, fmt.Errorf("if statement: want } got: %s", wsRightB)
 	}
-	return ws, nil
+	return &ws, nil
 }
 
-func (p *Parser) parseDoStatement() (DoStatement, error) {
+func (p *Parser) parseDoStatement() (*DoStatement, error) {
 	var ds DoStatement
-	ds.Do = p.next()
-	if ds.Do.Type != DoToken {
-		return DoStatement{}, fmt.Errorf("do statement: want do got: %s", ds.Do)
+	dsDo := p.next()
+	if dsDo.Type != DoToken {
+		return nil, fmt.Errorf("do statement: want do got: %s", dsDo)
 	}
 	sc, err := p.parseSubroutineCall(p.next())
 	if err != nil {
-		return DoStatement{}, fmt.Errorf("do statement: %w", err)
+		return nil, fmt.Errorf("do statement: %w", err)
 	}
-	ds.SubroutineCall = sc
-	ds.Semi = p.next()
-	if ds.Semi.Type != SemiColonToken {
-		return DoStatement{}, fmt.Errorf("do statement: want ; got: %s", ds.Semi)
+	ds.SubCall = sc
+	dsSemi := p.next()
+	if dsSemi.Type != SemiColonToken {
+		return nil, fmt.Errorf("do statement: want ; got: %s", dsSemi)
 	}
-	return ds, nil
+	return &ds, nil
 }
 
 func (p *Parser) parseSubroutineCall(tok Token) (SubroutineCall, error) {
@@ -434,8 +417,7 @@ func (p *Parser) parseSubroutineCall(tok Token) (SubroutineCall, error) {
 		return SubroutineCall{}, fmt.Errorf("subroutine call: want identifier got: %s", sc.Name)
 	}
 	if p.peek().Type == DotToken {
-		d := p.next()
-		sc.Dot = &d
+		p.next() // Dot.
 		cn := sc.Name
 		sc.Dest = &cn
 		sc.Name = Identifier{p.next()}
@@ -444,35 +426,35 @@ func (p *Parser) parseSubroutineCall(tok Token) (SubroutineCall, error) {
 		}
 
 	}
-	sc.LeftP = p.next()
-	if sc.LeftP.Type != LeftParenToken {
-		return SubroutineCall{}, fmt.Errorf("subroutine call: want ( got: %s", sc.LeftP)
+	scLeftP := p.next()
+	if scLeftP.Type != LeftParenToken {
+		return SubroutineCall{}, fmt.Errorf("subroutine call: want ( got: %s", scLeftP)
 	}
 	el, err := p.parseExpressionList()
 	if err != nil {
 		return SubroutineCall{}, fmt.Errorf("subroutine call: %w", err)
 	}
-	sc.Expressions = &el
-	sc.RightP = p.next()
-	if sc.RightP.Type != RightParenToken {
-		return SubroutineCall{}, fmt.Errorf("subroutine call: want ) got: %s", sc.RightP)
+	sc.Expressions = el
+	scRightP := p.next()
+	if scRightP.Type != RightParenToken {
+		return SubroutineCall{}, fmt.Errorf("subroutine call: want ) got: %s", scRightP)
 	}
 	return sc, nil
 }
 
-func (p *Parser) parseExpressionList() (ExpressionList, error) {
+func (p *Parser) parseExpressionList() ([]Expression, error) {
 	if p.peek().Type == RightParenToken {
-		return ExpressionList{}, nil
+		return nil, nil
 	}
-	el := ExpressionList{Expressions: []interface{}{}}
+	el := []Expression{}
 	for {
 		e, err := p.parseExpression()
 		if err != nil {
-			return ExpressionList{}, fmt.Errorf("expression list: %w", err)
+			return nil, fmt.Errorf("expression list: %w", err)
 		}
-		el.Expressions = append(el.Expressions, e)
+		el = append(el, e)
 		if p.peek().Type == CommaToken {
-			el.Expressions = append(el.Expressions, p.next())
+			p.next() // skip comma
 			continue
 		}
 		break
@@ -480,24 +462,24 @@ func (p *Parser) parseExpressionList() (ExpressionList, error) {
 	return el, nil
 }
 
-func (p *Parser) parseReturn() (ReturnStatement, error) {
+func (p *Parser) parseReturn() (*ReturnStatement, error) {
 	var rs ReturnStatement
-	rs.Return = p.next()
-	if rs.Return.Type != ReturnToken {
-		return ReturnStatement{}, fmt.Errorf("return statement: want return got: %s", rs.Return)
+	rsReturn := p.next()
+	if rsReturn.Type != ReturnToken {
+		return nil, fmt.Errorf("return statement: want return got: %s", rsReturn)
 	}
 	if p.peek().Type != SemiColonToken {
 		e, err := p.parseExpression()
 		if err != nil {
-			return ReturnStatement{}, fmt.Errorf("return statement: %w", err)
+			return nil, fmt.Errorf("return statement: %w", err)
 		}
 		rs.Expression = &e
 	}
-	rs.Semi = p.next()
-	if rs.Semi.Type != SemiColonToken {
-		return ReturnStatement{}, fmt.Errorf("return statement: want ; got: %s", rs.Semi)
+	rsSemi := p.next()
+	if rsSemi.Type != SemiColonToken {
+		return nil, fmt.Errorf("return statement: want ; got: %s", rsSemi)
 	}
-	return rs, nil
+	return &rs, nil
 }
 
 var (
@@ -549,20 +531,16 @@ func (p *Parser) parseTerm() (Term, error) {
 		return Term{Token: &tok}, nil
 	}
 	if tok.Type == LeftParenToken {
-		lp := p.next()
-		t := Term{}
-		t.ParenLeftP = &lp
+		p.next() // skip parenthesis
 		e, err := p.parseExpression()
 		if err != nil {
 			return Term{}, fmt.Errorf("term: %w", err)
 		}
-		t.ParenExpression = &e
 		rp := p.next()
 		if rp.Type != RightParenToken {
 			return Term{}, fmt.Errorf("term: want ) got: %s", rp)
 		}
-		t.ParenRightP = &rp
-		return t, nil
+		return Term{ParenExpression: &e}, nil
 	}
 	if tokenIn(tok, unaryOps) {
 		op := p.next()
@@ -575,7 +553,7 @@ func (p *Parser) parseTerm() (Term, error) {
 	if tok.Type == IdentifierToken {
 		ident := p.next()
 		if p.peek().Type == LeftBraketToken {
-			lb := p.next()
+			p.next() // left braket
 			e, err := p.parseExpression()
 			if err != nil {
 				return Term{}, fmt.Errorf("term: array expression: %w", err)
@@ -586,9 +564,7 @@ func (p *Parser) parseTerm() (Term, error) {
 			}
 			return Term{
 				ArrayIdent:  &ident,
-				ArrayLeftB:  &lb,
-				ArrayExpr:   &e,
-				ArrayRightB: &rb,
+				ArrayExpr: &e,
 			}, nil
 		}
 		if p.peek().Type == DotToken ||
@@ -597,7 +573,7 @@ func (p *Parser) parseTerm() (Term, error) {
 			if err != nil {
 				return Term{}, fmt.Errorf("term: %s", err)
 			}
-			return Term{SubroutineCall: sc}, nil
+			return Term{SubCall: &sc}, nil
 		}
 		return Term{Token: &ident}, nil
 	}

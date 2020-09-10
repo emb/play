@@ -7,22 +7,24 @@ Usage: hackjackc [Path/to/jack/files]
 package main
 
 import (
-	"bytes"
-	"encoding/xml"
+	"flag"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"encoding/json"
 )
 
+var printAST = flag.Bool("ast", false, "print the AST as a JSON object")
+
 func main() {
-	if len(os.Args) < 2 {
+	flag.Parse()
+	if flag.NArg() < 1 {
 		fmt.Fprintf(os.Stderr, "Usage: %s PATH_TO_JACK_DIR_OR_FILE\n", os.Args[0])
 		os.Exit(1)
 	}
 	status := 0
-	for _, p := range os.Args[1:] {
+	for _, p := range flag.Args() {
 		if err := process(p); err != nil {
 			status++
 			fmt.Fprintf(os.Stderr, "Error: %s", err)
@@ -65,36 +67,27 @@ func compile(f string) error {
 	if err != nil {
 		return fmt.Errorf("compile: %w", err)
 	}
+	defer r.Close()
+	
 	parser := NewParser(NewLexer(r))
 	prog, err := parser.Parse()
 	if err != nil {
 		return fmt.Errorf("compile: %w", err)
 	}
-
-	c := struct {
-		Program
-		XMLName struct{} `xml:"class"`
-	}{Program: *prog}
-	x, err := xml.MarshalIndent(c, "", "  ")
-	if err != nil {
-		log.Fatal(err)
+	// print the ast to stdout.
+	if *printAST {
+		if err := json.NewEncoder(os.Stdout).Encode(prog); err != nil {
+			return fmt.Errorf("compile: %w", err)
+		}
 	}
-	// Hack to fix xml expression layout.
-	x = bytes.Replace(x, []byte("arrexpression"), []byte("expression"), -1)
-	x = bytes.Replace(x, []byte("elsestatements"), []byte("statements"), -1)
-	x = bytes.Replace(x, []byte("term2"), []byte("term"), -1)
-	x = bytes.Replace(x, []byte("<expressionList></expressionList>"),
-		[]byte("<expressionList>\n</expressionList>"), -1)
-	x = bytes.Replace(x, []byte("<parameterList></parameterList>"),
-		[]byte("<parameterList>\n</parameterList>"), -1)
-
 	outpath := strings.TrimSuffix(f, filepath.Ext(f))
-	out, err := os.Create(fmt.Sprintf("%s.xml", outpath))
+	out, err := os.Create(fmt.Sprintf("%s.vm", outpath))
 	if err != nil {
 		return fmt.Errorf("compile: %w", err)
 	}
-	if _, err := out.Write(x); err != nil {
-		return fmt.Errorf("compile: %w", err)
-	}
-	return nil
+	defer out.Close()
+	
+	ctx := Context{Name: prog.Name.Literal, sym: NewSymbols()}
+	w := writer{Writer:out}
+	return prog.Compile(&ctx, &w)
 }
